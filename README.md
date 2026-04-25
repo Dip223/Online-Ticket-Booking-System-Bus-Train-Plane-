@@ -35,7 +35,7 @@ The end users of this system are:
 
 ## Technologies Used
 - Java / Python / Web Technology
-- MySQL Database
+- MongoDB
 - UML Diagrams
 
 ## Group Information

@@ -1,5 +1,27 @@
 const API = "http://127.0.0.1:5000";
 
+
+// ================= HELPER =================
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+function authHeader() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getToken()
+    };
+}
+
+function handleAuthError(res) {
+    if (res.status === 401) {
+        alert("Session expired. Please login again ❌");
+        localStorage.removeItem("token");
+        window.location = "/";
+    }
+}
+
+
 // ================= LOGIN =================
 function login() {
     fetch(API + "/login", {
@@ -12,20 +34,22 @@ function login() {
     })
     .then(res => res.json())
     .then(data => {
-        if (data._id) {
+        if (data.token) {
             alert("Login Success ✅");
-            localStorage.setItem("user_id", data._id);
+            localStorage.setItem("token", data.token);
             window.location = "/dashboard";
         } else {
-            alert("Login Failed ❌");
+            alert(data.message || "Login Failed ❌");
         }
     });
 }
 
 
 // ================= REGISTER =================
+let otpTimer = 60;
+
 function register() {
-    fetch(API + "/register", {
+    fetch(API + "/send-register-otp", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
@@ -37,7 +61,52 @@ function register() {
     .then(res => res.json())
     .then(data => {
         alert(data.message);
-        window.location = "/";
+
+        document.getElementById("otpBox").style.display = "block";
+        startOTPTimer();
+    });
+}
+
+
+// ================= OTP TIMER =================
+function startOTPTimer() {
+    let btn = document.getElementById("resendBtn");
+
+    if (!btn) return;
+
+    btn.disabled = true;
+
+    let interval = setInterval(() => {
+        btn.innerText = "Resend OTP (" + otpTimer + "s)";
+        otpTimer--;
+
+        if (otpTimer < 0) {
+            clearInterval(interval);
+            btn.disabled = false;
+            btn.innerText = "Resend OTP";
+            otpTimer = 60;
+        }
+    }, 1000);
+}
+
+
+// ================= VERIFY OTP =================
+function verifyRegisterOTP() {
+    fetch(API + "/verify-register-otp", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            email: document.getElementById("email").value,
+            otp: document.getElementById("otp").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+
+        if (data.message.toLowerCase().includes("success")) {
+            window.location = "/";
+        }
     });
 }
 
@@ -68,7 +137,7 @@ function loadTrainRoutes() {
 }
 
 
-// ================= FILL ROUTES + OPERATORS =================
+// ================= FILL ROUTES =================
 function fillRoutesAndOperators(data, type) {
     let routeSelect = document.getElementById("route");
     let operatorSelect = document.getElementById("operator");
@@ -78,7 +147,6 @@ function fillRoutesAndOperators(data, type) {
     routeSelect.innerHTML = "";
     operatorSelect.innerHTML = "";
 
-    // Routes
     data.routes.forEach(r => {
         routeSelect.innerHTML += `
             <option value="${r.from}|${r.to}|${r.price}|${type}">
@@ -87,7 +155,6 @@ function fillRoutesAndOperators(data, type) {
         `;
     });
 
-    // Operators
     data.operators.forEach(op => {
         operatorSelect.innerHTML += `
             <option value="${op}">${op}</option>
@@ -96,13 +163,19 @@ function fillRoutesAndOperators(data, type) {
 }
 
 
-// ================= BOOKING =================
-function book(type) {
+// ================= BOOK =================
+function book() {
     let routeValue = document.getElementById("route").value;
     let operator = document.getElementById("operator").value;
 
     if (!routeValue) {
-        alert("Please select a route ❌");
+        alert("Select route first ❌");
+        return;
+    }
+
+    if (!getToken()) {
+        alert("Please login first ❌");
+        window.location = "/";
         return;
     }
 
@@ -110,47 +183,58 @@ function book(type) {
 
     fetch(API + "/book", {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: authHeader(),
         body: JSON.stringify({
-            user_id: localStorage.getItem("user_id"),
             source: val[0],
             destination: val[1],
             price: val[2],
             type: val[3],
-            operator: operator, // ✅ NEW
+            operator: operator,
             payment: document.getElementById("payment").value
         })
     })
-    .then(res => res.json())
+    .then(res => {
+        handleAuthError(res);
+        return res.json();
+    })
     .then(data => {
         alert(data.message);
     });
 }
 
-// optional (not required but kept)
-function bookPlane() { book("Plane"); }
-function bookBus() { book("Bus"); }
-function bookTrain() { book("Train"); }
-
 
 // ================= LOAD BOOKINGS =================
 function loadBookings() {
-    fetch(API + "/my-bookings?user_id=" + localStorage.getItem("user_id"))
-    .then(res => res.json())
+    if (!getToken()) return;
+
+    fetch(API + "/my-bookings", {
+        headers: {
+            "Authorization": "Bearer " + getToken()
+        }
+    })
+    .then(res => {
+        handleAuthError(res);
+        return res.json();
+    })
     .then(data => {
         let html = "";
 
+        if (data.length === 0) {
+            html = "<p>No bookings yet 😕</p>";
+        }
+
         data.forEach(b => {
-    html += `
-        <div style="border:1px solid #ccc; margin:10px; padding:10px;">
-            <b>${b.ticket.type}</b><br>
-            ${b.ticket.source} → ${b.ticket.destination}<br>
-            Operator: ${b.operator} <br>
-            Price: ৳${b.ticket.price}<br>
-            ${b.payment}
-        </div>
-    `;
-});
+            html += `
+                <div style="border:1px solid #ccc; margin:10px; padding:10px; border-radius:8px;">
+                    <b>${b.ticket.type}</b><br>
+                    ${b.ticket.source} → ${b.ticket.destination}<br>
+                    Operator: ${b.operator || "N/A"}<br>
+                    Price: ৳${b.ticket.price}<br>
+                    <span style="color:green">${b.payment}</span>
+                </div>
+            `;
+        });
+
         document.getElementById("tickets").innerHTML = html;
     });
 }
@@ -182,3 +266,9 @@ function resetPassword() {
     .then(res => res.json())
     .then(data => alert(data.message));
 }
+
+
+// ================= AUTO LOAD =================
+window.onload = function() {
+    loadBookings();
+};

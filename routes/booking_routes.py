@@ -3,18 +3,26 @@ from config import DB
 from models.ticket_factory import TicketFactory
 from models.payment_strategy import BkashPayment, CardPayment, PaymentContext
 
+# 🔐 JWT
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 booking = Blueprint("booking", __name__)
+
 
 # ================= BOOK TICKET =================
 @booking.route('/book', methods=['POST'])
+@jwt_required()  # ✅ secure endpoint
 def book_ticket():
     try:
         data = request.json
 
+        # ===== GET USER FROM JWT =====
+        user_id = get_jwt_identity()
+
         # ===== VALIDATION =====
-        required_fields = ["type", "source", "destination", "price", "payment"]
+        required_fields = ["type", "source", "destination", "price", "payment", "operator"]
         for field in required_fields:
-            if field not in data:
+            if field not in data or not data[field]:
                 return jsonify({"message": f"{field} is required ❌"}), 400
 
         # ===== 1. FACTORY PATTERN =====
@@ -37,8 +45,9 @@ def book_ticket():
         db = DB.get_db()
 
         booking_data = {
-            "user_id": data.get("user_id"),
+            "user_id": user_id,  # ✅ from JWT (secure)
             "ticket": ticket.to_dict(),
+            "operator": data.get("operator"),
             "payment": payment_result
         }
 
@@ -58,18 +67,17 @@ def book_ticket():
 
 # ================= GET USER BOOKINGS =================
 @booking.route('/my-bookings', methods=['GET'])
+@jwt_required()  # ✅ secure endpoint
 def my_bookings():
     try:
         db = DB.get_db()
 
-        user_id = request.args.get("user_id")
-
-        if not user_id:
-            return jsonify({"message": "user_id required ❌"}), 400
+        # ===== GET USER FROM JWT =====
+        user_id = get_jwt_identity()
 
         bookings = list(db.bookings.find({"user_id": user_id}))
 
-        # Convert ObjectId to string
+        # Convert ObjectId → string
         for b in bookings:
             b['_id'] = str(b['_id'])
 

@@ -1,96 +1,141 @@
 from flask import Blueprint, request, jsonify, render_template
-from models.email_sender import send_email
 from config import DB
+from models.email_sender import send_email
+from datetime import datetime, timedelta
 import random
+
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token
 
 auth = Blueprint("auth", __name__)
 
-# ================== MEMORY STORE ==================
-otp_store = {}
-
-# ================== PAGES ==================
+# ================= PAGES =================
 
 @auth.route('/')
 def home():
     return render_template("login.html")
 
-
 @auth.route('/register-page')
 def register_page():
     return render_template("register.html")
-
 
 @auth.route('/dashboard')
 def dashboard():
     return render_template("dashboard.html")
 
 
-@auth.route('/forgot')
-def forgot_page():
-    return render_template("forgot.html")
+# ================= SEND REGISTER OTP =================
 
-
-# ===== NEW PAGES (IMPORTANT) =====
-
-@auth.route('/bus')
-def bus_page():
-    return render_template("bus.html")
-
-
-@auth.route('/train')
-def train_page():
-    return render_template("train.html")
-
-
-@auth.route('/plane')
-def plane_page():
-    return render_template("plane.html")
-
-
-# ================== REGISTER ==================
-
-@auth.route('/register', methods=['POST'])
-def register():
+@auth.route('/send-register-otp', methods=['POST'])
+def send_register_otp():
     data = request.json
     db = DB.get_db()
 
-    # Save user
-    db.users.insert_one({
-        "name": data['name'],
-        "email": data['email'],
-        "password": data['password']
-    })
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
 
-    # Send welcome email
-    send_email(
-        data['email'],
-        "Welcome 🎉",
-        f"Hello {data['name']}, your account is created!"
+    # basic validation
+    if not name or not email or not password:
+        return jsonify({"message": "All fields required ❌"}), 400
+
+    # check if already registered
+    if db.users.find_one({"email": email}):
+        return jsonify({"message": "User already exists ❌"}), 400
+
+    otp = str(random.randint(100000, 999999))
+
+    # store OTP with expiry (5 min)
+    db.otps.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "otp": otp,
+                "user_data": {
+                    "name": name,
+                    "email": email,
+                    "password": generate_password_hash(password)  # ✅ hash early
+                },
+                "expires_at": datetime.utcnow() + timedelta(minutes=5)
+            }
+        },
+        upsert=True
     )
 
-    return jsonify({"message": "Registered + Email Sent"})
+    # send email (HTML template handled inside)
+    send_email(email, "OTP Verification", otp, name)
+
+    return jsonify({"message": "OTP sent to your email 📧"})
 
 
-# ================== LOGIN ==================
+# ================= VERIFY OTP + CREATE ACCOUNT =================
+
+@auth.route('/verify-register-otp', methods=['POST'])
+def verify_register_otp():
+    data = request.json
+    db = DB.get_db()
+
+    email = data.get('email')
+    user_otp = data.get('otp')
+
+    record = db.otps.find_one({"email": email})
+
+    if not record:
+        return jsonify({"message": "OTP not found ❌"}), 404
+
+    # check expiry
+    if datetime.utcnow() > record['expires_at']:
+        db.otps.delete_one({"email": email})
+        return jsonify({"message": "OTP expired ⏰"}), 400
+
+    # check OTP
+    if record['otp'] != user_otp:
+        return jsonify({"message": "Invalid OTP ❌"}), 400
+
+    user_data = record['user_data']
+
+    # final duplicate check
+    if db.users.find_one({"email": email}):
+        return jsonify({"message": "User already exists ❌"}), 400
+
+    # save user (already hashed)
+    db.users.insert_one(user_data)
+
+    # delete OTP after success
+    db.otps.delete_one({"email": email})
+
+    return jsonify({"message": "Account created successfully ✅"})
+
+
+# ================= LOGIN WITH JWT =================
 
 @auth.route('/login', methods=['POST'])
 def login():
     data = request.json
     db = DB.get_db()
 
-    user = db.users.find_one({
-        "email": data['email'],
-        "password": data['password']
+    email = data.get('email')
+    password = data.get('password')
+
+    user = db.users.find_one({"email": email})
+
+    if not user:
+        return jsonify({"message": "User not found ❌"}), 404
+
+    if not check_password_hash(user['password'], password):
+        return jsonify({"message": "Wrong password ❌"}), 401
+
+    # create JWT token
+    token = create_access_token(identity=str(user['_id']))
+
+    return jsonify({
+        "token": token,
+        "user_id": str(user['_id']),
+        "message": "Login successful ✅"
     })
 
-    if user:
-        user['_id'] = str(user['_id'])
-        return jsonify(user)
 
-    return jsonify({"message": "Invalid login"})
-
-
-# ================== USERS DEBUG ==================
+# ================= DEBUG (OPTIONAL) =================
 
 @auth.route('/users')
 def get_users():
@@ -100,66 +145,18 @@ def get_users():
     for u in users:
         u['_id'] = str(u['_id'])
 
-    return users
+    return jsonify(users)
 
+# ================= TRANSPORT PAGES =================
 
-# ================== OTP SYSTEM ==================
+@auth.route('/bus')
+def bus_page():
+    return render_template("bus.html")
 
-@auth.route('/send-otp', methods=['POST'])
-def send_otp():
-    data = request.json
-    email = data['email']
+@auth.route('/train')
+def train_page():
+    return render_template("train.html")
 
-    otp = str(random.randint(100000, 999999))
-    otp_store[email] = otp
-
-    send_email(email, "Your OTP", f"Your OTP is: {otp}")
-
-    return {"message": "OTP sent"}
-
-
-@auth.route('/verify-otp', methods=['POST'])
-def verify_otp():
-    data = request.json
-    email = data['email']
-    otp = data['otp']
-
-    if otp_store.get(email) == otp:
-        return {"message": "Verified ✅"}
-
-    return {"message": "Wrong OTP ❌"}
-
-
-# ================== PASSWORD RESET ==================
-
-@auth.route('/forgot-password', methods=['POST'])
-def forgot_password():
-    data = request.json
-    email = data['email']
-
-    otp = str(random.randint(100000, 999999))
-    otp_store[email] = otp
-
-    send_email(email, "Reset OTP", f"Your reset OTP is: {otp}")
-
-    return {"message": "Reset OTP sent"}
-
-
-@auth.route('/reset-password', methods=['POST'])
-def reset_password():
-    data = request.json
-    email = data['email']
-    otp = data['otp']
-    new_password = data['password']
-
-    if otp_store.get(email) == otp:
-        db = DB.get_db()
-
-        db.users.update_one(
-            {"email": email},
-            {"$set": {"password": new_password}}
-        )
-
-        return {"message": "Password updated ✅"}
-
-    return {"message": "Invalid OTP ❌"}
+@auth.route('/plane')
+def plane_page():
+    return render_template("plane.html")

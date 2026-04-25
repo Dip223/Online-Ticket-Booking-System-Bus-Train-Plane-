@@ -1,66 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-body {
-    font-family: Arial;
-    background: #f4f6f8;
-    text-align: center;
-}
+    <title>Online Ticket System</title>
 
-.box {
-    background: white;
-    padding: 20px;
-    margin: 30px auto;
-    width: 350px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px #ccc;
-}
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            text-align: center;
+        }
 
-button {
-    margin: 10px;
-    padding: 12px;
-    width: 90%;
-    background: #4facfe;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-}
+        .box {
+            background: white;
+            padding: 20px;
+            margin: 30px auto;
+            width: 350px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+        }
 
-button:hover {
-    background: #3a8de0;
-}
+        button {
+            margin: 10px;
+            padding: 12px;
+            width: 90%;
+            background: #4facfe;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 6px;
+        }
 
-#tickets {
-    margin-top: 20px;
-    text-align: left;
-}
-</style>
+        button:hover {
+            background: #3a8de0;
+        }
+
+        #tickets {
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
 </head>
 
 <body>
 
-<!-- ================= TRANSPORT SELECTION ================= -->
-<div class="box">
-    <h2>🚀 Choose Transport</h2>
+    <!-- ================= TRANSPORT SELECTION ================= -->
+    <div class="box">
+        <h2>🚀 Choose Transport</h2>
 
-    <button onclick="goBus()">🚌 Bus Booking</button>
-    <button onclick="goTrain()">🚆 Train Booking</button>
-    <button onclick="goPlane()">✈ Plane Booking</button>
-</div>
+        <button onclick="goBus()">🚌 Bus Booking</button>
+        <button onclick="goTrain()">🚆 Train Booking</button>
+        <button onclick="goPlane()">✈ Plane Booking</button>
+    </div>
 
 
-<!-- ================= BOOKING HISTORY ================= -->
-<div class="box">
-    <h2>📜 Booking History</h2>
+    <!-- ================= BOOKING HISTORY ================= -->
+    <div class="box">
+        <h2>📜 Booking History</h2>
 
-    <button onclick="loadBookings()">Load My Bookings</button>
+        <button onclick="loadBookings()">Load My Bookings</button>
 
-    <div id="tickets"></div>
-</div>
+        <div id="tickets"></div>
+    </div>
 
-<script src="/static/script.js"></script>
+
+    <!-- ================= SCRIPT ================= -->
+    <script src="/static/script.js"></script>
 
 </body>
 </html>

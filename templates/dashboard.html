@@ -29,7 +29,6 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 .hero h1 span{color:var(--g)}
 .hero p{color:rgba(255,255,255,.5);font-size:15px;max-width:480px;margin:0 auto}
 
-/* Transport cards */
 .transport-section{max-width:960px;margin:-36px auto 0;padding:0 24px;position:relative;z-index:10}
 .section-label{font-size:13px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-left:2px}
 .transport-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
@@ -61,44 +60,6 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 .tc.train:hover .tc-arrow{background:#eff6ff;color:#3b82f6;opacity:1}
 .tc.plane:hover .tc-arrow{background:#fff7ed;color:#f97316;opacity:1}
 
-/* Booking widget */
-.booking-section{max-width:960px;margin:0 auto;padding:0 24px 28px;display:none}
-.booking-section.open{display:block}
-.booking-widget{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-.bw-header{padding:20px 28px;display:flex;align-items:center;justify-content:space-between;color:#fff}
-.bw-header.bus{background:linear-gradient(135deg,#16a34a,#14532d)}
-.bw-header.train{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
-.bw-header.plane{background:linear-gradient(135deg,#f97316,#c2410c)}
-.bw-title-row{display:flex;align-items:center;gap:12px}
-.bw-title-row h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:900}
-.bw-title-row p{font-size:13px;opacity:.75;margin-top:3px}
-.bw-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:.2s;flex-shrink:0}
-.bw-close:hover{background:rgba(255,255,255,.35)}
-.bw-body{padding:26px 28px}
-.fields-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
-.field label{font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
-.field select{width:100%;padding:12px 14px;border:2px solid var(--bdr);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;color:var(--txt);background:#f8fafc;transition:.2s;appearance:none;cursor:pointer}
-.field select:focus{outline:none;border-color:var(--g)}
-.action-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.price-tag{padding:12px 20px;border-radius:10px;font-size:15px;font-weight:900;font-family:'Syne',sans-serif;white-space:nowrap;border:2px solid}
-.price-tag.bus{background:#dcfce7;color:#14532d;border-color:rgba(22,163,74,.3)}
-.price-tag.train{background:#eff6ff;color:#1d4ed8;border-color:rgba(59,130,246,.3)}
-.price-tag.plane{background:#fff7ed;color:#c2410c;border-color:rgba(249,115,22,.3)}
-.btn-book-now{padding:13px 28px;border:none;border-radius:10px;font-size:15px;font-weight:900;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.25s;display:flex;align-items:center;gap:8px;color:#fff;white-space:nowrap}
-.btn-book-now.bus{background:linear-gradient(135deg,#16a34a,#14532d)}
-.btn-book-now.train{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
-.btn-book-now.plane{background:linear-gradient(135deg,#f97316,#c2410c)}
-.btn-book-now:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
-.pay-section{margin-top:18px;border-top:1px solid var(--bdr);padding-top:16px}
-.pay-label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.pay-pills{display:flex;gap:8px;flex-wrap:wrap}
-.pp{padding:8px 16px;border:2px solid var(--bdr);border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;transition:.2s;background:#f8fafc;color:var(--sub);display:flex;align-items:center;gap:6px}
-.pp.sel.bus{border-color:#16a34a;background:#dcfce7;color:#15803d}
-.pp.sel.train{border-color:#3b82f6;background:#eff6ff;color:#1d4ed8}
-.pp.sel.plane{border-color:#f97316;background:#fff7ed;color:#c2410c}
-.pp:hover:not(.sel){border-color:var(--g);color:var(--g)}
-
-/* Stats */
 .stats-section{max-width:960px;margin:0 auto;padding:0 24px 22px}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .stat-c{background:#fff;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:14px;border-left:4px solid;box-shadow:0 2px 10px rgba(0,0,0,.05)}
@@ -108,7 +69,6 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 .stat-info h3{font-family:'Syne',sans-serif;font-size:22px;font-weight:900;color:var(--txt)}
 .stat-info p{font-size:12px;color:var(--sub);font-weight:600;margin-top:2px}
 
-/* History */
 .history-section{max-width:960px;margin:0 auto;padding:0 24px 40px}
 .sh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .sh-head h2{font-family:'Syne',sans-serif;font-size:17px;font-weight:900;color:var(--txt)}
@@ -130,7 +90,10 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 .empty-state i{font-size:44px;color:#e2e8f0;margin-bottom:14px;display:block}
 .empty-state h3{font-size:16px;font-weight:800;margin-bottom:6px;color:var(--txt)}
 .empty-state p{font-size:13px;color:var(--sub)}
-
+.notif-btn{position:relative;background:rgba(255,255,255,.1);border:none;border-radius:8px;padding:8px 12px;cursor:pointer;margin-right:8px;transition:.2s}
+.notif-btn:hover{background:rgba(255,255,255,.2)}
+.notif-btn i{color:#fff;font-size:16px}
+.notif-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;border-radius:50%;padding:2px 6px;font-size:10px;font-weight:700}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--nav);color:#fff;padding:14px 20px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:0 8px 32px rgba(0,0,0,.22);transform:translateY(80px);opacity:0;transition:.3s;z-index:999;display:flex;align-items:center;gap:8px;max-width:360px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-left:4px solid #16a34a}.toast.err{border-left:4px solid #ef4444}
@@ -139,11 +102,15 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 <body>
 
 <nav>
-  <a href="/" class="logo">
+  <a href="/dashboard" class="logo">
     <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
     <div class="logo-name">BD<span>Ticket</span></div>
   </a>
   <div class="nav-r">
+    <button class="notif-btn" onclick="window.location='/notifications-page'">
+      <i class="fas fa-bell"></i>
+      <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+    </button>
     <div class="nav-user"><i class="fas fa-user-circle"></i><span id="navName">Guest</span></div>
     <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</button>
   </div>
@@ -155,12 +122,10 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
   <p>Pick a transport type below to search routes and book your ticket instantly</p>
 </div>
 
-<!-- TRANSPORT CARDS (click to open booking widget via Factory) -->
 <div class="transport-section">
   <div class="section-label">Choose transport type</div>
   <div class="transport-grid">
-
-    <div class="tc bus" onclick="openBookingWidget('bus')">
+    <div class="tc bus" onclick="goToBusPage()">
       <div class="tc-badge">Most Popular</div>
       <div class="tc-icon">
         <svg viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></svg>
@@ -169,8 +134,7 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
       <div class="tc-desc">Ena · Green Line<br>Hanif · Shyamoli</div>
       <div class="tc-arrow"><i class="fas fa-arrow-right"></i></div>
     </div>
-
-    <div class="tc train" onclick="openBookingWidget('train')">
+    <div class="tc train" onclick="goToTrainPage()">
       <div class="tc-icon">
         <svg viewBox="0 0 24 24"><path d="M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-3.58-4-8-4zm-3.5 14c-.83 0-1.5-.67-1.5-1.5S7.67 13 8.5 13s1.5.67 1.5 1.5S9.33 16 8.5 16zm7 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM19 10H5V6h14v4z"/></svg>
       </div>
@@ -178,8 +142,7 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
       <div class="tc-desc">Upokul Express<br>Shundorbon · Joyentika</div>
       <div class="tc-arrow"><i class="fas fa-arrow-right"></i></div>
     </div>
-
-    <div class="tc plane" onclick="openBookingWidget('plane')">
+    <div class="tc plane" onclick="goToPlanePage()">
       <div class="tc-badge">Fastest</div>
       <div class="tc-icon">
         <svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
@@ -188,54 +151,9 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
       <div class="tc-desc">Biman Bangladesh<br>US-Bangla Airlines</div>
       <div class="tc-arrow"><i class="fas fa-arrow-right"></i></div>
     </div>
-
   </div>
 </div>
 
-<!-- BOOKING WIDGET — rendered by Factory Pattern -->
-<div class="booking-section" id="bookingSection">
-  <div class="booking-widget">
-    <div class="bw-header bus" id="bwHeader">
-      <div class="bw-title-row">
-        <i class="fas fa-bus" id="bwIcon" style="font-size:22px"></i>
-        <div>
-          <h3 id="bwTitle">Bus Booking</h3>
-          <p id="bwSub">Select route, operator and payment</p>
-        </div>
-      </div>
-      <button class="bw-close" onclick="closeWidget()"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="bw-body">
-      <div class="fields-row">
-        <div class="field">
-          <label><i class="fas fa-map-marker-alt"></i> From</label>
-          <select id="source" onchange="updateDest()"></select>
-        </div>
-        <div class="field">
-          <label><i class="fas fa-map-pin"></i> To</label>
-          <select id="destination" onchange="showPrice()"></select>
-        </div>
-        <div class="field">
-          <label><i class="fas fa-building"></i> Operator</label>
-          <select id="operator"></select>
-        </div>
-      </div>
-      <div class="action-row">
-        <div class="price-tag bus" id="priceTag">৳ <span id="priceDisplay">0</span></div>
-        <button class="btn-book-now bus" id="btnBookNow" onclick="bookNow()">
-          <i class="fas fa-ticket-alt"></i>Book Now
-        </button>
-      </div>
-      <div class="pay-section">
-        <div class="pay-label"><i class="fas fa-credit-card"></i> Payment Method</div>
-        <div class="pay-pills" id="payPills"></div>
-        <input type="hidden" id="payment" value="bkash">
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- STATS -->
 <div class="stats-section">
   <div class="stats-grid">
     <div class="stat-c g"><div class="stat-icon g"><i class="fas fa-ticket-alt"></i></div><div class="stat-info"><h3 id="sTot">0</h3><p>Total Bookings</p></div></div>
@@ -245,7 +163,6 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
   </div>
 </div>
 
-<!-- HISTORY -->
 <div class="history-section">
   <div class="sh-head">
     <h2>Booking History <span class="badge-n" id="bkCount">0</span></h2>
@@ -258,173 +175,19 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 
 <script src="/static/script.js"></script>
 <script>
-/* ================================================================
-   FACTORY PATTERN — Transport Widget Factory
-   A registry-based factory (no if/else) that creates the correct
-   transport configuration object on demand.
-   Open/Closed Principle: add new transport by calling register().
-   ================================================================ */
-const TransportWidgetFactory = (function () {
-
-  const _registry = {};
-
-  function register(type, config) {
-    _registry[type] = { ...config, type };
-  }
-
-  function create(type) {
-    if (!_registry[type]) throw new Error("Unknown transport: " + type);
-    return { ..._registry[type] };
-  }
-
-  return { register, create };
-})();
-
-/* Register each transport product — factory code never changes */
-TransportWidgetFactory.register("bus", {
-  name:    "Bus",
-  label:   "Bus Booking",
-  sub:     "Ena · Green Line · Hanif · Shyamoli",
-  icon:    "fa-bus",
-  color:   "bus",
-  apiPath: "bus-routes",
-});
-TransportWidgetFactory.register("train", {
-  name:    "Train",
-  label:   "Train Booking",
-  sub:     "Upokul · Shundorbon · Joyentika Express",
-  icon:    "fa-train",
-  color:   "train",
-  apiPath: "train-routes",
-});
-TransportWidgetFactory.register("plane", {
-  name:    "Air",
-  label:   "Air Ticket Booking",
-  sub:     "Biman Bangladesh · US-Bangla Airlines",
-  icon:    "fa-plane",
-  color:   "plane",
-  apiPath: "plane-routes",
-});
-
-/* ── State ── */
-let _cfg    = null;
-let _routes = [];
-
-/* ── Open widget — uses factory to get config ── */
-function openBookingWidget(type) {
-  _cfg = TransportWidgetFactory.create(type);   /* Factory call */
-
-  /* Apply config to DOM */
-  document.getElementById("bwHeader").className    = "bw-header " + _cfg.color;
-  document.getElementById("bwIcon").className       = "fas " + _cfg.icon;
-  document.getElementById("bwIcon").style.fontSize  = "22px";
-  document.getElementById("bwTitle").textContent    = _cfg.label;
-  document.getElementById("bwSub").textContent      = _cfg.sub;
-  document.getElementById("priceTag").className     = "price-tag " + _cfg.color;
-  document.getElementById("btnBookNow").className   = "btn-book-now " + _cfg.color;
-
-  /* Load routes */
-  fetch("http://127.0.0.1:5000/" + _cfg.apiPath)
-    .then(r => r.json())
-    .then(data => {
-      _routes = data.routes || [];
-      const srcSet = [...new Set(_routes.map(r => r.from))];
-      document.getElementById("source").innerHTML =
-        srcSet.map(s => `<option value="${s}">${s}</option>`).join("");
-      updateDest();
-      document.getElementById("operator").innerHTML =
-        (data.operators || []).map(o => `<option value="${o}">${o}</option>`).join("");
-    });
-
-  /* Load payment methods */
-  fetch("http://127.0.0.1:5000/payment-methods")
-    .then(r => r.json())
-    .then(pm => renderPayPills(pm))
-    .catch(() => renderPayPills([
-      {key:"bkash",label:"📱 bKash"},{key:"nagad",label:"💚 Nagad"},
-      {key:"visa", label:"💳 Visa"},{key:"mastercard",label:"💳 MasterCard"},
-    ]));
-
-  const section = document.getElementById("bookingSection");
-  section.classList.add("open");
-  setTimeout(() => section.scrollIntoView({behavior:"smooth", block:"start"}), 60);
-}
-
-function renderPayPills(methods) {
-  document.getElementById("payPills").innerHTML = methods.map((m, i) =>
-    `<div class="pp ${i===0?'sel '+_cfg.color:''}"
-          onclick="selPay('${m.key}',this)">
-       ${m.label||m.icon+' '+m.key}
-     </div>`
-  ).join("");
-  document.getElementById("payment").value = methods[0]?.key || "bkash";
-}
-
-function selPay(key, el) {
-  document.getElementById("payment").value = key;
-  document.querySelectorAll(".pp").forEach(e => e.classList.remove("sel","bus","train","plane"));
-  el.classList.add("sel", _cfg.color);
-}
-
-function closeWidget() {
-  document.getElementById("bookingSection").classList.remove("open");
-  _cfg = null;
-}
-
-function updateDest() {
-  const src  = document.getElementById("source").value;
-  const dest = document.getElementById("destination");
-  dest.innerHTML = _routes.filter(r => r.from === src)
-    .map(r => `<option value="${r.to}|${r.price}">${r.to} — ৳${r.price}</option>`)
-    .join("");
-  showPrice();
-}
-
-function showPrice() {
-  const v = (document.getElementById("destination").value || "").split("|")[1];
-  document.getElementById("priceDisplay").textContent = v || "0";
-}
-
-function showToast(msg, type) {
-  const el = document.getElementById("toast");
-  el.innerHTML = `<i class="fas fa-${type==='ok'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
-  el.className = "toast " + (type||"ok") + " show";
-  setTimeout(() => el.classList.remove("show"), 3500);
-}
-
+function goToBusPage() { window.location = "/bus"; }
+function goToTrainPage() { window.location = "/train"; }
+function goToPlanePage() { window.location = "/plane"; }
 function logout() { localStorage.clear(); window.location = "/"; }
 
-function bookNow() {
-  if (!localStorage.getItem("token")) { window.location = "/"; return; }
-  if (!_cfg) return;
-  const dv  = (document.getElementById("destination").value || "").split("|");
-  const src = document.getElementById("source").value;
-  const dst = dv[0]; const price = dv[1] || "0";
-  const op  = document.getElementById("operator").value;
-  const pay = document.getElementById("payment").value;
-  if (!dst) { showToast("Select a destination ❌","err"); return; }
-  if (!op)  { showToast("Select an operator ❌","err"); return; }
-
-  fetch("http://127.0.0.1:5000/book", {
-    method:  "POST",
-    headers: {"Content-Type":"application/json","Authorization":"Bearer "+localStorage.getItem("token")},
-    body:    JSON.stringify({source:src,destination:dst,price,type:_cfg.name,operator:op,payment:pay}),
-  })
-  .then(r => { if(r.status===401){localStorage.clear();window.location="/";} return r.json(); })
-  .then(d => {
-    const ok = d.message && (d.message.includes("✅") || d.message.toLowerCase().includes("success"));
-    showToast(d.message, ok?"ok":"err");
-    if (ok) { closeWidget(); setTimeout(loadBookings, 800); }
-  })
-  .catch(() => showToast("Server error ❌","err"));
-}
-
-window.onload = function () {
+window.onload = function() {
   if (!localStorage.getItem("token")) { window.location = "/"; return; }
   const name = localStorage.getItem("name") || "Traveller";
-  document.getElementById("navName").textContent  = name;
+  document.getElementById("navName").textContent = name;
   document.getElementById("heroName").textContent = name;
   loadBookings();
+  loadNotifications();
+  setInterval(loadNotifications, 30000);
 };
 </script>
 </body>

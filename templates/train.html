@@ -1,68 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Train Booking</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BD Ticket — Train Booking</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-body {
-    font-family: Arial;
-    background: #f0fff4;
-    text-align: center;
-}
+:root{--g:#16a34a;--gd:#14532d;--gl:#dcfce7;--nav:#0f172a;--bg:#f0f4f8;--white:#fff;--txt:#0f172a;--sub:#64748b;--bdr:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.28)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-box{width:38px;height:38px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
+.logo-name{font-family:'Syne',sans-serif;font-size:21px;font-weight:900;color:#fff;letter-spacing:-.5px}
+.logo-name span{color:var(--g)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.nav-user{color:rgba(255,255,255,.7);font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.07);padding:8px 14px;border-radius:8px}
+.btn-back{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:8px;cursor:pointer}
+.btn-logout{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:8px;cursor:pointer}
 
-.box {
-    background: white;
-    padding: 25px;
-    margin: 40px auto;
-    width: 400px;
-    border-radius: 12px;
-    box-shadow: 0 0 15px #ccc;
-}
+.hero-train{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:40px 40px 50px;color:#fff;text-align:center}
+.hero-train h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:900;margin-bottom:10px}
+.hero-train h1 i{color:#3b82f6;margin-right:10px}
+.hero-train p{color:rgba(255,255,255,.6);font-size:14px}
 
-select, button {
-    width: 90%;
-    padding: 10px;
-    margin: 10px;
-}
-
-button {
-    background: #ff9800;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #e68900;
-}
+.container{max-width:600px;margin:40px auto;padding:0 24px}
+.card{background:#fff;border-radius:24px;padding:32px;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.field{margin-bottom:28px}
+.field label{font-size:13px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px}
+.field label i{margin-right:6px;color:#3b82f6}
+.field select,.field input{width:100%;padding:14px 16px;border:2px solid var(--bdr);border-radius:12px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;transition:.2s;background:#f8fafc}
+.field select:focus,.field input:focus{outline:none;border-color:#3b82f6}
+.row2cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.btn-next{width:100%;padding:16px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;font-family:'Syne',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:.25s}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(59,130,246,.3)}
+.btn-back-page{width:100%;margin-top:16px;padding:14px;background:#f1f5f9;color:var(--sub);border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-back-page:hover{background:#e2e8f0;color:var(--txt)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--nav);color:#fff;padding:14px 20px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:0 8px 32px rgba(0,0,0,.22);transform:translateY(80px);opacity:0;transition:.3s;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
 </style>
 </head>
-
 <body>
 
-<div class="box">
-    <h2>🚆 Train Booking</h2>
+<nav>
+  <a href="/dashboard" class="logo">
+    <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
+    <div class="logo-name">BD<span>Ticket</span></div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-user"><i class="fas fa-user-circle"></i><span id="navName">User</span></div>
+    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</button>
+  </div>
+</nav>
 
-    <!-- ROUTE -->
-    <select id="route"></select>
-
-    <!-- TRAIN NAME -->
-    <select id="operator"></select>
-
-    <!-- PAYMENT -->
-    <select id="payment">
-        <option value="bkash">bKash</option>
-        <option value="card">Card</option>
-    </select>
-
-    <button onclick="book('Train')">Book Train</button>
+<div class="hero-train">
+  <h1><i class="fas fa-train"></i> Train Ticket Booking</h1>
+  <p>Select your journey details to continue</p>
 </div>
 
+<div class="container">
+  <div class="card">
+    <div class="row2cols">
+      <div class="field">
+        <label><i class="fas fa-map-marker-alt"></i> From</label>
+        <select id="source"></select>
+      </div>
+      <div class="field">
+        <label><i class="fas fa-map-pin"></i> To</label>
+        <select id="destination"></select>
+      </div>
+    </div>
+    
+    <div class="field">
+      <label><i class="fas fa-calendar-alt"></i> Date of Journey</label>
+      <input type="date" id="journeyDate">
+    </div>
+    
+    <button class="btn-next" onclick="goToNext()">
+      <i class="fas fa-arrow-right"></i> Next: Choose Operator & Payment
+    </button>
+    
+    <button class="btn-back-page" onclick="window.location='/dashboard'">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script src="/static/script.js"></script>
-
 <script>
-loadTrainRoutes();
-</script>
+let routesData = [];
 
+async function loadRoutes() {
+  try {
+    const res = await fetch("http://127.0.0.1:5000/train-routes");
+    const data = await res.json();
+    routesData = data.routes || [];
+    
+    const sources = [...new Set(routesData.map(r => r.from))];
+    const sourceSelect = document.getElementById("source");
+    sourceSelect.innerHTML = sources.map(s => `<option value="${s}">${s}</option>`).join("");
+    
+    if (sources.length > 0) {
+      updateDestinations();
+      sourceSelect.onchange = () => updateDestinations();
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("journeyDate").min = today;
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+function updateDestinations() {
+  const source = document.getElementById("source").value;
+  const available = routesData.filter(r => r.from === source);
+  const destSelect = document.getElementById("destination");
+  destSelect.innerHTML = available.map(r => 
+    `<option value="${r.to}|${r.price}">${r.to} — ৳${r.price}</option>`
+  ).join("");
+}
+
+function showToast(msg, type) {
+  const el = document.getElementById("toast");
+  el.innerHTML = `<i class="fas fa-${type==='ok'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  el.className = "toast " + (type||"ok") + " show";
+  setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+function goToNext() {
+  const source = document.getElementById("source").value;
+  const destVal = document.getElementById("destination").value;
+  const destParts = destVal.split("|");
+  const destination = destParts[0];
+  const price = destParts[1];
+  const journeyDate = document.getElementById("journeyDate").value;
+  
+  if (!source || !destination) {
+    showToast("Please select both source and destination ❌", "err");
+    return;
+  }
+  if (!journeyDate) {
+    showToast("Please select journey date ❌", "err");
+    return;
+  }
+  
+  sessionStorage.setItem("train_selection", JSON.stringify({
+    source, destination, price, journeyDate
+  }));
+  
+  window.location = "/train-schedule";
+}
+
+function logout() { localStorage.clear(); window.location = "/"; }
+
+window.onload = function() {
+  if (!localStorage.getItem("token")) { window.location = "/"; return; }
+  const name = localStorage.getItem("name") || "User";
+  document.getElementById("navName").textContent = name;
+  loadRoutes();
+};
+</script>
 </body>
 </html>

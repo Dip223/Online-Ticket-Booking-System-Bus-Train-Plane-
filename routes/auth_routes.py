@@ -198,3 +198,18 @@ def get_users():
         u["_id"] = str(u["_id"])
         u.pop("password", None)
     return jsonify(users)
+
+
+# ================= SCHEDULE PAGES (Step 2 - Operator Selection) =================
+
+@auth.route('/bus-schedule')
+def bus_schedule_page():
+    return render_template("bus_schedule.html")
+
+@auth.route('/train-schedule')
+def train_schedule_page():
+    return render_template("train_schedule.html")
+
+@auth.route('/plane-schedule')
+def plane_schedule_page():
+    return render_template("plane_schedule.html")

@@ -1,18 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BD Ticket — Reset Password</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--g:#16a34a;--gd:#14532d;--gl:#dcfce7;--txt:#0f172a;--sub:#64748b;--bdr:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(145deg,#0f172a 0%,#052e16 60%,#0f172a 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+nav{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;padding:0 48px;border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-box{width:34px;height:34px;background:var(--g);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.logo-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:900;color:#fff}
+.logo-name span{color:var(--g)}
+.back-nav{color:rgba(255,255,255,.55);font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px}
+.back-nav:hover{color:#fff}
+
+.card{background:#fff;border-radius:22px;padding:44px 40px;width:100%;max-width:440px;box-shadow:0 24px 80px rgba(0,0,0,.35);margin-top:64px}
+.card-icon{width:68px;height:68px;background:var(--gl);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 20px}
+.card-head{text-align:center;margin-bottom:26px}
+.card-head h2{font-family:'Syne',sans-serif;font-size:24px;font-weight:900;color:var(--txt);margin-bottom:6px}
+.card-head p{font-size:14px;color:var(--sub);line-height:1.6}
+
+/* Steps */
+.steps{display:flex;align-items:center;justify-content:center;margin-bottom:26px}
+.p-step{display:flex;flex-direction:column;align-items:center;gap:4px}
+.p-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:'Syne',sans-serif;transition:.3s}
+.p-dot.active{background:var(--gl);color:var(--g);border:2px solid var(--g)}
+.p-dot.done{background:var(--g);color:#fff}
+.p-dot.idle{background:#f1f5f9;color:#94a3b8;border:2px solid var(--bdr)}
+.p-label{font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.5px;text-transform:uppercase}
+.p-line{width:52px;height:2px;background:var(--bdr);margin-bottom:16px;transition:.3s}
+.p-line.done{background:var(--g)}
+
+.section{display:none}
+.section.active{display:block}
+
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+.iw{position:relative}
+.iw i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px}
+.iw input{width:100%;padding:13px 14px 13px 41px;border:2px solid var(--bdr);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--txt);background:#f8fafc;transition:.2s}
+.iw input:focus{outline:none;border-color:var(--g);background:#fff;box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+
+.otp-input{width:100%;padding:16px;text-align:center;letter-spacing:12px;border:2px solid var(--bdr);border-radius:10px;font-size:32px;font-weight:900;font-family:'Syne',sans-serif;background:#f8fafc;color:var(--txt);transition:.2s}
+.otp-input:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(22,163,74,.12)}
+.otp-hint{font-size:12px;color:var(--sub);text-align:center;margin-top:8px}
+.timer-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.timer-txt{font-size:12px;color:var(--sub);font-weight:600}
+.resend-btn{font-size:13px;color:var(--g);font-weight:800;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+.resend-btn:disabled{color:#94a3b8;cursor:not-allowed}
+
+.btn-g{width:100%;padding:14px;background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.25s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
+.btn-g:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(22,163,74,.35)}
+
+.alert{padding:11px 14px;border-radius:9px;font-size:13px;font-weight:700;margin-bottom:14px;display:none;align-items:center;gap:8px}
+.alert.err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.alert.ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.back-link{text-align:center;font-size:14px;color:var(--sub);margin-top:16px}
+.back-link a{color:var(--g);font-weight:800;text-decoration:none}
+</style>
+</head>
 <body>
 
-<h2>Reset Password</h2>
+<nav>
+  <a href="/" class="logo">
+    <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
+    <div class="logo-name">BD<span>Ticket</span></div>
+  </a>
+  <a href="/" class="back-nav"><i class="fas fa-arrow-left"></i>Back to Login</a>
+</nav>
 
-<input id="email" placeholder="Email">
-<button onclick="sendResetOTP()">Send OTP</button>
+<div class="card">
+  <div class="card-icon">🔐</div>
+  <div class="card-head">
+    <h2>Reset Password</h2>
+    <p>Enter your email to receive a 6-digit verification code</p>
+  </div>
 
-<input id="otp" placeholder="OTP">
-<input id="newpass" placeholder="New Password">
+  <!-- Progress -->
+  <div class="steps">
+    <div class="p-step"><div class="p-dot active" id="pd1">1</div><div class="p-label">Email</div></div>
+    <div class="p-line" id="pl1"></div>
+    <div class="p-step"><div class="p-dot idle" id="pd2">2</div><div class="p-label">OTP</div></div>
+    <div class="p-line" id="pl2"></div>
+    <div class="p-step"><div class="p-dot idle" id="pd3">3</div><div class="p-label">New Pass</div></div>
+  </div>
 
-<button onclick="resetPassword()">Reset</button>
+  <div class="alert" id="resetAlert"></div>
+
+  <!-- Step 1 -->
+  <div class="section active" id="s1">
+    <div class="fg">
+      <label>Registered Email</label>
+      <div class="iw"><i class="fas fa-envelope"></i><input id="resetEmail" type="email" placeholder="your@email.com"></div>
+    </div>
+    <button class="btn-g" onclick="sendResetOTP()"><i class="fas fa-paper-plane"></i>Send OTP</button>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="section" id="s2">
+    <div class="fg">
+      <input class="otp-input" id="resetOTP" type="text" maxlength="6" placeholder="••••••" oninput="this.value=this.value.replace(/\D/g,'')">
+      <p class="otp-hint">Enter the 6-digit code sent to your email</p>
+      <div class="timer-row">
+        <span class="timer-txt" id="resetTimerTxt"></span>
+        <button class="resend-btn" id="resetResendBtn" onclick="sendResetOTP()" disabled>Resend OTP</button>
+      </div>
+    </div>
+    <button class="btn-g" onclick="verifyResetOTP()"><i class="fas fa-check-circle"></i>Verify OTP</button>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="section" id="s3">
+    <div class="fg">
+      <label>New Password</label>
+      <div class="iw"><i class="fas fa-lock"></i><input id="newpass" type="password" placeholder="New password (min 6 chars)"></div>
+    </div>
+    <div class="fg">
+      <label>Confirm Password</label>
+      <div class="iw"><i class="fas fa-lock"></i><input id="confirmpass" type="password" placeholder="Repeat new password"></div>
+    </div>
+    <button class="btn-g" onclick="resetPassword()"><i class="fas fa-key"></i>Update Password</button>
+  </div>
+
+  <div class="back-link"><a href="/"><i class="fas fa-arrow-left"></i> Back to Login</a></div>
+</div>
 
 <script src="/static/script.js"></script>
-
+<script>
+let _rTimer;
+function startResetTimer(){
+  let s=60;
+  const btn=document.getElementById('resetResendBtn'),txt=document.getElementById('resetTimerTxt');
+  btn.disabled=true; clearInterval(_rTimer);
+  _rTimer=setInterval(()=>{
+    txt.textContent='Resend in '+s+'s'; s--;
+    if(s<0){clearInterval(_rTimer);txt.textContent='';btn.disabled=false;}
+  },1000);
+}
+</script>
 </body>
 </html>

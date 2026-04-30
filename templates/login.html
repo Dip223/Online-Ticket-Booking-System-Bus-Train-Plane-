@@ -1,48 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BD Ticket — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-body {
-    font-family: Arial;
-    background: linear-gradient(to right, #4facfe, #00f2fe);
-    text-align: center;
-}
-.box {
-    background: white;
-    padding: 30px;
-    margin: 100px auto;
-    width: 300px;
-    border-radius: 10px;
-}
-input, button {
-    margin: 10px;
-    padding: 10px;
-    width: 90%;
-}
-button {
-    background: #4facfe;
-    color: white;
-    border: none;
-}
+:root{--g:#16a34a;--gd:#14532d;--gl:#dcfce7;--nav:#0f172a;--bg:#f8fafc;--white:#fff;--txt:#0f172a;--sub:#64748b;--bdr:#e2e8f0;--shd:0 4px 24px rgba(0,0,0,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+
+/* NAV */
+nav{background:var(--nav);display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:66px;box-shadow:0 2px 24px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-box{width:38px;height:38px;background:var(--g);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff}
+.logo-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px}
+.logo-name span{color:var(--g)}
+.nav-r{display:flex;align-items:center;gap:16px}
+.nav-links{display:flex;gap:4px}
+.nav-links a{color:rgba(255,255,255,.55);text-decoration:none;font-size:13px;font-weight:600;padding:7px 14px;border-radius:7px;transition:.2s;display:flex;align-items:center;gap:6px}
+.nav-links a:hover{color:#fff;background:rgba(255,255,255,.08)}
+.btn-reg{background:var(--g);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;transition:.2s}
+.btn-reg:hover{background:var(--gd)}
+
+/* MAIN */
+.main{flex:1;display:flex}
+
+/* LEFT HERO */
+.hero{flex:1;background:linear-gradient(145deg,#0f172a 0%,#052e16 60%,#0f172a 100%);padding:60px 56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-80px;right:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(22,163,74,.18) 0%,transparent 70%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-60px;left:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(22,163,74,.12) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);color:#4ade80;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:28px;width:fit-content}
+.hero h1{font-family:'Syne',sans-serif;font-size:46px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:20px;letter-spacing:-1px}
+.hero h1 span{color:var(--g)}
+.hero p{color:rgba(255,255,255,.55);font-size:15px;line-height:1.8;max-width:420px;margin-bottom:40px}
+.transport-cards{display:flex;gap:12px;margin-bottom:48px}
+.t-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:100px;transition:.25s;cursor:default}
+.t-card:hover{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.4);transform:translateY(-3px)}
+.t-card i{font-size:24px;color:var(--g)}
+.t-card span{font-size:12px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.5px}
+.hero-stats{display:flex;gap:36px}
+.stat-item .num{font-family:'Syne',sans-serif;font-size:30px;font-weight:900;color:var(--g)}
+.stat-item .lbl{font-size:12px;color:rgba(255,255,255,.4);font-weight:600;margin-top:3px;letter-spacing:.3px}
+
+/* RIGHT LOGIN */
+.login-pane{width:460px;background:var(--white);display:flex;align-items:center;justify-content:center;padding:48px 44px;box-shadow:-8px 0 40px rgba(0,0,0,.06)}
+.login-box{width:100%}
+.lbox-top{text-align:center;margin-bottom:32px}
+.lbox-top h2{font-family:'Syne',sans-serif;font-size:26px;font-weight:900;color:var(--txt);margin-bottom:6px}
+.lbox-top p{font-size:14px;color:var(--sub)}
+.fg{margin-bottom:18px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+.iw{position:relative}
+.iw i{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:15px}
+.iw input{width:100%;padding:13px 14px 13px 42px;border:2px solid var(--bdr);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--txt);background:#f8fafc;transition:.2s}
+.iw input:focus{outline:none;border-color:var(--g);background:#fff;box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+.row-fl{display:flex;justify-content:flex-end;margin-top:-10px;margin-bottom:18px}
+.row-fl a{font-size:13px;color:var(--g);font-weight:700;text-decoration:none}
+.row-fl a:hover{text-decoration:underline}
+.btn-login{width:100%;padding:14px;background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;cursor:pointer;transition:.25s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.2px}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(22,163,74,.35)}
+.btn-login:active{transform:none}
+.divider{display:flex;align-items:center;gap:14px;margin:22px 0}
+.divider hr{flex:1;border:none;border-top:1px solid var(--bdr)}
+.divider span{font-size:12px;color:#94a3b8;font-weight:600}
+.reg-link{text-align:center;font-size:14px;color:var(--sub)}
+.reg-link a{color:var(--g);font-weight:800;text-decoration:none}
+.alert{padding:11px 15px;border-radius:9px;font-size:13px;font-weight:700;margin-bottom:16px;display:none;align-items:center;gap:8px}
+.alert.err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.alert.ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
 </style>
 </head>
-
 <body>
 
-<div class="box">
-<h2>Login</h2>
+<nav>
+  <a href="/" class="logo">
+    <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
+    <div class="logo-name">BD<span>Ticket</span></div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-links">
+      <a href="/bus"><i class="fas fa-bus"></i>Bus</a>
+      <a href="/train"><i class="fas fa-train"></i>Train</a>
+      <a href="/plane"><i class="fas fa-plane"></i>Air</a>
+    </div>
+    <a href="/register-page" class="btn-reg">Register Free</a>
+  </div>
+</nav>
 
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+<div class="main">
+  <div class="hero">
+    <div>
+      <div class="hero-badge"><i class="fas fa-star"></i>Bangladesh's #1 Booking Platform</div>
+      <h1>Book Your<br>Journey<br><span>Smarter</span></h1>
+      <p>Search, compare and book Bus, Train & Air tickets all in one place. Fast, secure and hassle-free.</p>
+      <div class="transport-cards">
+        <div class="t-card"><i class="fas fa-bus"></i><span>BUS</span></div>
+        <div class="t-card"><i class="fas fa-train"></i><span>TRAIN</span></div>
+        <div class="t-card"><i class="fas fa-plane"></i><span>AIR</span></div>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="num">1K+</div><div class="lbl">Travellers</div></div>
+      <div class="stat-item"><div class="num">50+</div><div class="lbl">Routes</div></div>
+      <div class="stat-item"><div class="num">24/7</div><div class="lbl">Support</div></div>
+    </div>
+  </div>
 
-<button onclick="login()">Login</button>
+  <div class="login-pane">
+    <div class="login-box">
+      <div class="lbox-top">
+        <h2>Welcome👋</h2>
+        <p>Login to manage your bookings</p>
+      </div>
 
-<p><a href="/register-page">Register</a></p>
-<p><a href="/forgot">Forgot Password?</a></p>
+      <div class="alert" id="loginAlert"></div>
 
+      <div class="fg">
+        <label>Email Address</label>
+        <div class="iw"><i class="fas fa-envelope"></i><input id="email" type="email" placeholder="your@email.com"></div>
+      </div>
+
+      <div class="fg">
+        <label>Password</label>
+        <div class="iw"><i class="fas fa-lock"></i><input id="password" type="password" placeholder="Your password"></div>
+      </div>
+
+      <div class="row-fl"><a href="/forgot">Forgot password?</a></div>
+
+      <button class="btn-login" onclick="login()"><i class="fas fa-sign-in-alt"></i>Login to Account</button>
+
+      <div class="divider"><hr><span>OR</span><hr></div>
+      <div class="reg-link">No account? <a href="/register-page">Register now — it's free</a></div>
+    </div>
+  </div>
 </div>
 
 <script src="/static/script.js"></script>
-
+<script>
+function _alert(id,msg,type){const e=document.getElementById(id);e.innerHTML=`<i class="fas fa-${type==='err'?'exclamation-circle':'check-circle'}"></i>${msg}`;e.className='alert '+type;e.style.display='flex'}
+</script>
 </body>
 </html>

@@ -1,87 +1,106 @@
 from flask import Blueprint, request, jsonify
 from config import DB
-from models.ticket_factory import TicketFactory
-from models.payment_strategy import BkashPayment, CardPayment, PaymentContext
+from models.ticket_factory   import TicketFactory
+from models.payment_strategy import PaymentContext, PaymentStrategyFactory
+from datetime import datetime
 
-# 🔐 JWT
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 booking = Blueprint("booking", __name__)
 
 
-# ================= BOOK TICKET =================
-@booking.route('/book', methods=['POST'])
-@jwt_required()  # ✅ secure endpoint
+# ── Book ticket ───────────────────────────────────────────────────────────────
+
+@booking.route("/book", methods=["POST"])
+@jwt_required()
 def book_ticket():
     try:
-        data = request.json
+        data    = request.json
+        user_id = get_jwt_identity()   # secure — from JWT, not frontend
 
-        # ===== GET USER FROM JWT =====
-        user_id = get_jwt_identity()
+        # Validate required fields
+        required = ["type", "source", "destination", "price", "payment", "operator"]
+        missing  = [f for f in required if not data.get(f)]
+        if missing:
+            return jsonify({"message": f"Missing fields: {missing} ❌"}), 400
 
-        # ===== VALIDATION =====
-        required_fields = ["type", "source", "destination", "price", "payment", "operator"]
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({"message": f"{field} is required ❌"}), 400
-
-        # ===== 1. FACTORY PATTERN =====
+        # ── FACTORY PATTERN ──────────────────────────────────────────────────
+        # Delegates creation to TicketFactory registry — no if/else here
         ticket = TicketFactory.create_ticket(
-            data['type'],
-            data['source'],
-            data['destination'],
-            int(data['price'])
+            transport_type = data["type"],
+            source         = data["source"],
+            destination    = data["destination"],
+            price          = int(float(data["price"])),
         )
 
-        # ===== 2. STRATEGY PATTERN =====
-        if data['payment'].lower() == "bkash":
-            payment = PaymentContext(BkashPayment())
-        else:
-            payment = PaymentContext(CardPayment())
-
-        payment_result = payment.execute(ticket.price)
-
-        # ===== 3. SAVE TO DATABASE =====
-        db = DB.get_db()
-
-        booking_data = {
-            "user_id": user_id,  # ✅ from JWT (secure)
-            "ticket": ticket.to_dict(),
-            "operator": data.get("operator"),
-            "payment": payment_result
+        # ── STRATEGY PATTERN ─────────────────────────────────────────────────
+        # PaymentStrategyFactory picks the right strategy from registry
+        payer_info = {
+            "phone":       data.get("phone", ""),
+            "card_number": data.get("card_number", ""),
         }
+        strategy = PaymentStrategyFactory.get_strategy(data["payment"])
+        context  = PaymentContext(strategy)
+        receipt  = context.execute_payment(ticket.price, payer_info)
 
-        db.bookings.insert_one(booking_data)
+        # ── Save to DB ────────────────────────────────────────────────────────
+        booking_doc = {
+            "user_id":    user_id,
+            "ticket":     ticket.to_dict(),
+            "operator":   data["operator"],
+            "payment":    receipt.to_dict(),
+            "status":     "CONFIRMED",
+            "booked_at":  datetime.utcnow().isoformat(),
+        }
+        DB.bookings().insert_one(booking_doc)
 
-        # ===== 4. RESPONSE =====
-        return jsonify({
-            "message": "Booking Successful ✅",
-            "ticket": ticket.to_dict(),
-            "operator": data.get("operator"),
-            "payment": payment_result
+        # Save notification for user
+        DB.notifications().insert_one({
+            "user_id":    user_id,
+            "message":    f"Booking confirmed! {ticket.type} ticket: {ticket.source} → {ticket.destination} (৳{ticket.price})",
+            "type":       "booking",
+            "read":       False,
+            "created_at": datetime.utcnow().isoformat(),
         })
 
+        return jsonify({
+            "message": "Booking Successful ✅",
+            "ticket":  ticket.to_dict(),
+            "payment": receipt.to_dict(),
+            "operator": data["operator"],
+        })
+
+    except KeyError as e:
+        return jsonify({"message": str(e)}), 400
+    except Exception as e:
+        return jsonify({"message": f"Error: {str(e)}"}), 500
+
+
+# ── My bookings ───────────────────────────────────────────────────────────────
+
+@booking.route("/my-bookings", methods=["GET"])
+@jwt_required()
+def my_bookings():
+    try:
+        user_id  = get_jwt_identity()
+        all_docs = list(DB.bookings().find({"user_id": user_id}))
+        for b in all_docs:
+            b["_id"] = str(b["_id"])
+        return jsonify(all_docs)
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
 
-# ================= GET USER BOOKINGS =================
-@booking.route('/my-bookings', methods=['GET'])
-@jwt_required()  # ✅ secure endpoint
-def my_bookings():
+# ── My notifications ──────────────────────────────────────────────────────────
+
+@booking.route("/my-notifications", methods=["GET"])
+@jwt_required()
+def my_notifications():
     try:
-        db = DB.get_db()
-
-        # ===== GET USER FROM JWT =====
         user_id = get_jwt_identity()
-
-        bookings = list(db.bookings.find({"user_id": user_id}))
-
-        # Convert ObjectId → string
-        for b in bookings:
-            b['_id'] = str(b['_id'])
-
-        return jsonify(bookings)
-
+        notes   = list(DB.notifications().find({"user_id": user_id}))
+        for n in notes:
+            n["_id"] = str(n["_id"])
+        return jsonify(notes)
     except Exception as e:
         return jsonify({"message": str(e)}), 500

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My Notifications</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .notification {
+            background: white;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        .notification.unread {
+            background: #e8f5e9;
+            border-left-color: #ff9800;
+        }
+        .notification.read {
+            opacity: 0.7;
+        }
+        .time {
+            color: #666;
+            font-size: 12px;
+        }
+        .ticket-details {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        button {
+            background: #4facfe;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #3a8de0;
+        }
+        .mark-all {
+            background: #ff9800;
+        }
+        .mark-all:hover {
+            background: #e68900;
+        }
+        .unread-badge {
+            background: #ff9800;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .refresh-btn {
+            background: #28a745;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #4facfe;
+            text-decoration: none;
+        }
+        .no-notifications {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            color: #666;
+        }
+        .auto-refresh {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📬 My Notifications</h2>
+            <div>
+                <span id="unreadBadge" class="unread-badge">0</span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <button class="mark-all" onclick="markAllAsRead()">📌 Mark All as Read</button>
+            <button class="refresh-btn" onclick="loadNotifications()">🔄 Refresh</button>
+            <button onclick="window.location.href='/dashboard'">◀ Back to Dashboard</button>
+        </div>
+
+        <div id="notificationsList">
+            <p style="text-align:center;">Loading notifications...</p>
+        </div>
+        
+        <div class="auto-refresh">
+            🔄 Auto-refreshes every 10 seconds
+        </div>
+    </div>
+
+    <script>
+        // Get token from localStorage
+        const token = localStorage.getItem("token");
+        
+        // Redirect to login if no token
+        if (!token) {
+            alert("Please login first");
+            window.location = "/";
+        }
+
+        // Function to load notifications from API
+        function loadNotifications() {
+            console.log("🔄 Loading notifications...");
+            
+            fetch("/notifications", {
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    alert("Session expired. Please login again.");
+                    window.location = "/";
+                    return;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data && data.notifications !== undefined) {
+                    displayNotifications(data.notifications);
+                    updateUnreadCount(data.unread_count);
+                    console.log(`✅ Loaded ${data.notifications.length} notifications, ${data.unread_count} unread`);
+                }
+            })
+            .catch(err => {
+                console.error("Error loading notifications:", err);
+                document.getElementById("notificationsList").innerHTML = 
+                    '<div class="no-notifications">❌ Error loading notifications. Please refresh.</div>';
+            });
+        }
+
+        // Display notifications in the UI
+        function displayNotifications(notifications) {
+            const container = document.getElementById("notificationsList");
+
+            if (!notifications || notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="no-notifications">
+                        ✨ No notifications yet<br>
+                        <small>Book a ticket to see notifications here!</small>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notifications.map(n => `
+                <div class="notification ${n.read ? 'read' : 'unread'}" id="notif-${n._id}">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                        <strong style="font-size:16px;">🎫 ${n.ticket_details?.type || 'Ticket'} Booking Confirmed!</strong>
+                        <span class="time">📅 ${n.timestamp || new Date(n.created_at).toLocaleString()}</span>
+                    </div>
+                    <p style="margin-top:10px;">${n.message || 'Booking confirmed successfully!'}</p>
+                    <div class="ticket-details">
+                        <strong>📋 Ticket Details:</strong><br>
+                        🚆 Type: ${n.ticket_details?.type || 'N/A'}<br>
+                        📍 From: ${n.ticket_details?.source || 'N/A'}<br>
+                        🎯 To: ${n.ticket_details?.destination || 'N/A'}<br>
+                        💰 Price: ৳${n.ticket_details?.price || 'N/A'}<br>
+                        💳 Payment: ${n.payment || 'N/A'}<br>
+                        🏢 Operator: ${n.operator || 'N/A'}
+                    </div>
+                    ${!n.read ? `<button onclick="markAsRead('${n._id}')" style="margin-top:10px;">✓ Mark as Read</button>` : 
+                                `<span style="color:#888; font-size:12px;">✓ Already read</span>`}
+                </div>
+            `).join('');
+        }
+
+        // Update the unread count badge
+        function updateUnreadCount(count) {
+            const badge = document.getElementById("unreadBadge");
+            if (badge) {
+                badge.innerText = count;
+                // Change color based on count
+                if (count > 0) {
+                    badge.style.background = "#ff9800";
+                    badge.style.animation = "pulse 0.5s";
+                    setTimeout(() => { badge.style.animation = ""; }, 500);
+                } else {
+                    badge.style.background = "#4CAF50";
+                }
+            }
+            
+            // Update page title
+            if (count > 0) {
+                document.title = `(${count}) My Notifications`;
+            } else {
+                document.title = "My Notifications";
+            }
+        }
+
+        // Mark a single notification as read
+        function markAsRead(notificationId) {
+            console.log("📌 Marking as read:", notificationId);
+            
+            fetch("/notifications/mark-read", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({notification_id: notificationId})
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Mark read response:", data);
+                loadNotifications(); // Reload to update UI
+            })
+            .catch(err => {
+                console.error("Error marking as read:", err);
+            });
+        }
+
+        // Mark all notifications as read
+        function markAllAsRead() {
+            console.log("📌 Marking all as read...");
+            
+            fetch("/notifications/mark-all-read", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Mark all response:", data);
+                alert(data.message);
+                loadNotifications(); // Reload to update UI
+            })
+            .catch(err => {
+                console.error("Error marking all as read:", err);
+            });
+        }
+
+        // Auto-refresh every 10 seconds
+        let refreshInterval = setInterval(() => {
+            loadNotifications();
+        }, 10000);
+
+        // Initial load
+        loadNotifications();
+
+        // Cleanup interval when page is closed
+        window.addEventListener("beforeunload", function() {
+            clearInterval(refreshInterval);
+        });
+
+        // Add CSS animation for pulse effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

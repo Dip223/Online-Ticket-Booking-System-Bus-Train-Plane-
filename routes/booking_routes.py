@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from config import DB
 from models.ticket_factory import TicketFactory
 from models.payment_strategy import PaymentContext, PaymentStrategyFactory
-from models.routes_data import get_price, get_all_operators_with_schedules
+from models.routes_data import get_price, get_all_operators_with_schedules, get_all_schedules_as_list
 from datetime import datetime
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -10,13 +10,22 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 booking = Blueprint("booking", __name__)
 
 
-# ================= OPERATOR SCHEDULES API =================
+# ================= OPERATOR SCHEDULES API (Grouped by Operator) =================
 
 @booking.route('/operators/<transport>/schedules', methods=['GET'])
 def get_operator_schedules(transport):
-    """Get all operators with schedules for a transport type"""
+    """Get all operators with schedules for a transport type (grouped by operator)"""
     operators = get_all_operators_with_schedules(transport)
     return jsonify(operators)
+
+
+# ================= ALL SCHEDULES API (Each departure as separate item) =================
+
+@booking.route('/schedules/<transport>', methods=['GET'])
+def get_all_schedules(transport):
+    """Get all schedules as individual booking options (each departure time separate)"""
+    schedules = get_all_schedules_as_list(transport)
+    return jsonify(schedules)
 
 
 # ================= BOOK TICKET =================
@@ -62,6 +71,8 @@ def book_ticket():
             "ticket": ticket.to_dict(),
             "operator": data["operator"],
             "payment": receipt.to_dict(),
+            "departure_time": data.get("departure_time", ""),
+            "arrival_time": data.get("arrival_time", ""),
             "journey_date": data.get("journey_date", datetime.now().isoformat()),
             "status": "CONFIRMED",
             "booked_at": datetime.utcnow().isoformat(),
@@ -71,7 +82,7 @@ def book_ticket():
         # ── Save notification for user ────────────────────────────────────────
         DB.notifications().insert_one({
             "user_id": user_id,
-            "message": f"Booking confirmed! {ticket.type} ticket: {ticket.source} → {ticket.destination} (৳{ticket.price})",
+            "message": f"Booking confirmed! {ticket.type} ticket: {ticket.source} → {ticket.destination} at {data.get('departure_time', 'N/A')} (৳{ticket.price})",
             "type": "booking",
             "read": False,
             "created_at": datetime.utcnow().isoformat(),
@@ -82,6 +93,7 @@ def book_ticket():
             "ticket": ticket.to_dict(),
             "payment": receipt.to_dict(),
             "operator": data["operator"],
+            "departure_time": data.get("departure_time", ""),
         })
 
     except KeyError as e:

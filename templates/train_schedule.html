@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>BD Ticket — Train Schedule</title>
+<title>BD Ticket — Train Schedules</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
@@ -22,34 +22,38 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 .hero{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:30px 40px;color:#fff}
 .hero h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:900}
 .hero h1 i{color:#3b82f6;margin-right:10px}
-.hero .trip-info{margin-top:15px;display:flex;gap:30px;flex-wrap:wrap;background:rgba(255,255,255,.1);padding:15px 20px;border-radius:12px}
+.trip-info{margin-top:15px;display:flex;gap:30px;flex-wrap:wrap;background:rgba(255,255,255,.1);padding:15px 20px;border-radius:12px}
+.trip-info span{font-size:14px}
+.trip-info i{margin-right:8px;color:#3b82f6}
 
-.container{max-width:1200px;margin:0 auto;padding:30px 24px}
+.container{max-width:1000px;margin:0 auto;padding:30px 24px}
 .filter-bar{background:#fff;border-radius:16px;padding:20px;margin-bottom:30px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .operator-filters{display:flex;gap:12px;flex-wrap:wrap}
 .filter-chip{padding:8px 16px;border:2px solid var(--bdr);border-radius:50px;cursor:pointer;font-size:13px;font-weight:600;background:#fff}
 .filter-chip:hover{border-color:#3b82f6}
 .filter-chip.active{background:#3b82f6;color:#fff}
-.reset-btn{padding:8px 20px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer;margin-left:15px}
+.reset-btn{padding:8px 20px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer;margin-left:15px;font-weight:600}
 
 .schedule-grid{display:flex;flex-direction:column;gap:16px}
-.schedule-card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05);transition:.2s;border:2px solid transparent}
-.schedule-card:hover{transform:translateY(-2px);border-color:#3b82f6}
-.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-.operator-name{font-size:20px;font-weight:900;font-family:'Syne',sans-serif}
+.schedule-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08);border:1px solid #e2e8f0}
+.schedule-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.card-header{background:#f8fafc;padding:16px 20px;border-bottom:1px solid #e2e8f0}
+.operator-name{font-size:18px;font-weight:900;font-family:'Syne',sans-serif}
 .operator-name i{margin-right:8px;color:#3b82f6}
-.price-badge{background:#eff6ff;color:#1d4ed8;padding:8px 16px;border-radius:50px;font-weight:800}
-.details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:15px 0}
-.detail-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+.vehicle-info{font-size:12px;color:var(--sub);margin-top:4px}
+.card-body{padding:20px}
+.time-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:15px}
+.time-departure,.time-arrival{font-size:24px;font-weight:900;color:var(--txt)}
+.duration-badge{background:#f1f5f9;padding:8px 16px;border-radius:50px;font-size:13px;font-weight:600}
+.detail-item{display:inline-flex;align-items:center;gap:10px;margin-right:20px;font-size:13px;color:var(--sub);margin-bottom:15px}
 .detail-item i{color:#3b82f6}
-.departure-times{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
-.time-slot{background:#f1f5f9;padding:6px 12px;border-radius:20px;font-size:12px}
-.facilities{display:flex;gap:8px;flex-wrap:wrap}
-.facility{background:#f1f5f9;padding:4px 10px;border-radius:15px;font-size:11px}
-.select-time-btn{margin-top:15px;padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;width:100%}
-.back-btn{display:inline-flex;align-items:center;gap:8px;margin-top:30px;padding:12px 24px;background:#f1f5f9;border:none;border-radius:10px;cursor:pointer}
+.seats-info{color:#3b82f6;font-weight:800;margin-bottom:15px}
+.price{font-size:22px;font-weight:900;color:#3b82f6;font-family:'Syne',sans-serif;margin:15px 0}
+.book-btn{width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer}
+.back-btn{display:inline-flex;align-items:center;gap:8px;margin-top:30px;padding:12px 24px;background:#f1f5f9;border:none;border-radius:10px;cursor:pointer;font-weight:600}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--nav);color:#fff;padding:14px 20px;border-radius:12px;transform:translateY(80px);opacity:0;transition:.3s}
 .toast.show{transform:translateY(0);opacity:1}
+.loading{text-align:center;padding:60px}
 </style>
 </head>
 <body>
@@ -73,7 +77,7 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 <div class="container">
   <div class="filter-bar">
     <div class="operator-filters" id="operatorFilters"></div>
-    <button class="reset-btn" onclick="resetFilters()">Reset</button>
+    <button class="reset-btn" onclick="resetFilters()">Reset All</button>
   </div>
   <div class="schedule-grid" id="scheduleGrid"></div>
   <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back to Search</button>
@@ -81,72 +85,95 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 <div class="toast" id="toast"></div>
 
 <script>
-let operatorsData = [];
+let allSchedules = [];
 const journeyData = JSON.parse(sessionStorage.getItem('train_selection') || '{}');
 
-async function loadSchedules() {
-  const res = await fetch("http://127.0.0.1:5000/operators/train/schedules");
-  operatorsData = await res.json();
-  
-  document.getElementById("tripInfo").innerHTML = `
-    <span><i class="fas fa-map-marker-alt"></i> From: ${journeyData.source}</span>
-    <span><i class="fas fa-map-pin"></i> To: ${journeyData.destination}</span>
-    <span><i class="fas fa-calendar"></i> Date: ${journeyData.journeyDate}</span>
-    <span><i class="fas fa-tag"></i> Price: ৳${journeyData.price}</span>
-  `;
-  
-  const filtersDiv = document.getElementById("operatorFilters");
-  filtersDiv.innerHTML = `<div class="filter-chip active" onclick="filterOperators('all')">All</div>`;
-  operatorsData.forEach(op => {
-    filtersDiv.innerHTML += `<div class="filter-chip" data-op="${op.name}" onclick="filterOperators('${op.name}')">${op.name}</div>`;
-  });
-  
-  displaySchedules(operatorsData);
+function showToast(msg, type) {
+  const el = document.getElementById("toast");
+  el.innerHTML = `<i class="fas fa-${type==='ok'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  el.className = "toast " + (type||"ok") + " show";
+  setTimeout(() => el.classList.remove("show"), 3500);
 }
 
-function displaySchedules(operators) {
+async function loadSchedules() {
+  try {
+    const res = await fetch("http://127.0.0.1:5000/schedules/train");
+    allSchedules = await res.json();
+    
+    document.getElementById("tripInfo").innerHTML = `
+      <span><i class="fas fa-map-marker-alt"></i> From: ${journeyData.source || 'N/A'}</span>
+      <span><i class="fas fa-map-pin"></i> To: ${journeyData.destination || 'N/A'}</span>
+      <span><i class="fas fa-calendar"></i> Date: ${journeyData.journeyDate || 'N/A'}</span>
+      <span><i class="fas fa-tag"></i> Price: ৳${journeyData.price || 'N/A'}</span>
+    `;
+    
+    const operators = [...new Set(allSchedules.map(s => s.operator))];
+    const filtersDiv = document.getElementById("operatorFilters");
+    filtersDiv.innerHTML = `<div class="filter-chip active" onclick="filterByOperator('all')">All Operators</div>`;
+    operators.forEach(op => {
+      filtersDiv.innerHTML += `<div class="filter-chip" data-op="${op}" onclick="filterByOperator('${op}')">${op}</div>`;
+    });
+    
+    displaySchedules(allSchedules);
+  } catch(err) {
+    console.error(err);
+    document.getElementById("scheduleGrid").innerHTML = '<div class="loading">Error loading schedules. Please try again.</div>';
+  }
+}
+
+function displaySchedules(schedules) {
   const container = document.getElementById("scheduleGrid");
-  container.innerHTML = operators.map(op => `
+  
+  if (schedules.length === 0) {
+    container.innerHTML = '<div class="loading">No schedules found for this filter.</div>';
+    return;
+  }
+  
+  container.innerHTML = schedules.map(s => `
     <div class="schedule-card">
       <div class="card-header">
-        <div class="operator-name"><i class="fas fa-building"></i> ${op.name}</div>
-        <div class="price-badge">৳ ${journeyData.price}</div>
+        <div class="operator-name"><i class="fas fa-building"></i> ${s.operator}</div>
+        <div class="vehicle-info"><i class="fas fa-train"></i> ${s.vehicle} | ${s.total_seats} Seats</div>
       </div>
-      <div class="details-grid">
-        <div class="detail-item"><i class="fas fa-clock"></i> Duration: ${op.duration}</div>
-        <div class="detail-item"><i class="fas fa-chair"></i> Total Seats: ${op.total_seats}</div>
-        <div class="detail-item"><i class="fas fa-train"></i> Train: ${op.vehicle_type}</div>
+      <div class="card-body">
+        <div class="time-row">
+          <div><div class="time-departure">${s.departure}</div><div style="font-size:11px;color:#666">Departure</div></div>
+          <div class="duration-badge"><i class="fas fa-clock"></i> ${s.duration}</div>
+          <div><div class="time-arrival">${s.arrival}</div><div style="font-size:11px;color:#666">Arrival</div></div>
+        </div>
+        <div class="detail-item"><i class="fas fa-chair"></i> Total Seats: ${s.total_seats}</div>
+        <div class="facilities" style="margin:10px 0">${s.facilities.map(f => `<span style="background:#f1f5f9;padding:3px 8px;border-radius:12px;font-size:11px;margin-right:5px">${f}</span>`).join('')}</div>
+        <div class="price">৳ ${journeyData.price}</div>
+        <button class="book-btn" onclick="bookNow('${s.operator}', '${s.departure}', '${s.arrival}')">Select This Train</button>
       </div>
-      <div class="departure-times"><strong>Departure Times:</strong> ${op.departure_times.map(t => `<span class="time-slot">${t}</span>`).join('')}</div>
-      <div class="facilities"><strong>Facilities:</strong> ${op.facilities.map(f => `<span class="facility">${f}</span>`).join('')}</div>
-      <button class="select-time-btn" onclick="selectOperator('${op.name}')">Select This Train</button>
     </div>
   `).join('');
 }
 
-function filterOperators(name) {
+function filterByOperator(op) {
   document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  if (name === 'all') {
-    displaySchedules(operatorsData);
+  if (op === 'all') {
+    displaySchedules(allSchedules);
     document.querySelector('.filter-chip').classList.add('active');
   } else {
-    const filtered = operatorsData.filter(op => op.name === name);
+    const filtered = allSchedules.filter(s => s.operator === op);
     displaySchedules(filtered);
-    document.querySelector(`.filter-chip[data-op="${name}"]`).classList.add('active');
+    document.querySelector(`.filter-chip[data-op="${op}"]`).classList.add('active');
   }
 }
 
-function resetFilters() { filterOperators('all'); }
+function resetFilters() { filterByOperator('all'); }
 
-function selectOperator(operatorName) {
-  journeyData.operator = operatorName;
+function bookNow(operator, departureTime, arrivalTime) {
+  journeyData.operator = operator;
+  journeyData.departure_time = departureTime;
+  journeyData.arrival_time = arrivalTime;
   sessionStorage.setItem('train_selection', JSON.stringify(journeyData));
-  showToast(`Selected ${operatorName}`, "ok");
-  setTimeout(() => window.location = "/train-payment", 1000);
+  showToast(`Selected ${operator} at ${departureTime}`, "ok");
+  setTimeout(() => window.location = "/train-payment", 800);
 }
 
 function goBack() { window.location = "/train"; }
-function showToast(msg, type) { const el = document.getElementById("toast"); el.innerHTML = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2000); }
 function logout() { localStorage.clear(); window.location = "/"; }
 
 window.onload = function() {

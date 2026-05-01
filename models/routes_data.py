@@ -36,80 +36,125 @@ ROUTES = {
     ]
 }
 
-# ==================== OPERATORS WITH SCHEDULES ====================
+# ==================== OPERATORS WITH DETAILED SCHEDULES ====================
 OPERATOR_SCHEDULES = {
     "bus": {
         "Ena Transport": {
-            "departure_times": ["06:00 AM", "08:00 AM", "10:00 AM", "02:00 PM", "06:00 PM", "08:00 PM"],
-            "duration": "6-7 hours",
+            "vehicle": "Volvo AC",
+            "total_seats": 40,
             "facilities": ["AC", "WiFi", "Snacks", "Water bottle"],
-            "vehicle_type": "Volvo AC",
-            "total_seats": 40
+            "duration": "6-7 hours",
+            "schedules": [
+                {"departure": "06:00 AM", "arrival": "12:00 PM"},
+                {"departure": "08:00 AM", "arrival": "02:00 PM"},
+                {"departure": "10:00 AM", "arrival": "04:00 PM"},
+                {"departure": "02:00 PM", "arrival": "08:00 PM"},
+                {"departure": "06:00 PM", "arrival": "12:00 AM"},
+                {"departure": "08:00 PM", "arrival": "02:00 AM"}
+            ]
         },
         "Green Line": {
-            "departure_times": ["07:00 AM", "09:00 AM", "11:00 AM", "03:00 PM", "07:00 PM"],
-            "duration": "5-6 hours",
+            "vehicle": "Scania AC",
+            "total_seats": 38,
             "facilities": ["AC", "TV", "Snacks", "Blanket"],
-            "vehicle_type": "Scania AC",
-            "total_seats": 38
+            "duration": "5-6 hours",
+            "schedules": [
+                {"departure": "07:00 AM", "arrival": "12:30 PM"},
+                {"departure": "09:00 AM", "arrival": "02:30 PM"},
+                {"departure": "11:00 AM", "arrival": "04:30 PM"},
+                {"departure": "03:00 PM", "arrival": "08:30 PM"},
+                {"departure": "07:00 PM", "arrival": "12:30 AM"}
+            ]
         },
         "Hanif": {
-            "departure_times": ["05:30 AM", "07:30 AM", "12:00 PM", "04:00 PM", "09:00 PM"],
-            "duration": "7-8 hours",
+            "vehicle": "Hino AC",
+            "total_seats": 42,
             "facilities": ["AC", "Charging point"],
-            "vehicle_type": "Hino AC",
-            "total_seats": 42
+            "duration": "7-8 hours",
+            "schedules": [
+                {"departure": "05:30 AM", "arrival": "12:30 PM"},
+                {"departure": "07:30 AM", "arrival": "02:30 PM"},
+                {"departure": "12:00 PM", "arrival": "07:00 PM"},
+                {"departure": "04:00 PM", "arrival": "11:00 PM"},
+                {"departure": "09:00 PM", "arrival": "04:00 AM"}
+            ]
         },
         "Shyamoli": {
-            "departure_times": ["06:30 AM", "09:30 AM", "01:00 PM", "05:00 PM", "10:00 PM"],
-            "duration": "6-7 hours",
+            "vehicle": "Standard Non-AC",
+            "total_seats": 45,
             "facilities": ["Non-AC", "Economy"],
-            "vehicle_type": "Standard",
-            "total_seats": 45
+            "duration": "6-7 hours",
+            "schedules": [
+                {"departure": "06:30 AM", "arrival": "12:30 PM"},
+                {"departure": "09:30 AM", "arrival": "03:30 PM"},
+                {"departure": "01:00 PM", "arrival": "07:00 PM"},
+                {"departure": "05:00 PM", "arrival": "11:00 PM"},
+                {"departure": "10:00 PM", "arrival": "04:00 AM"}
+            ]
         }
     },
     "train": {
         "Upokul Express": {
-            "departure_times": ["07:00 AM", "03:00 PM"],
-            "duration": "4-5 hours",
+            "vehicle": "Intercity",
+            "total_seats": 600,
             "facilities": ["AC", "Non-AC", "Food available"],
-            "vehicle_type": "Intercity",
-            "total_seats": 600
+            "duration": "4-5 hours",
+            "schedules": [
+                {"departure": "07:00 AM", "arrival": "11:30 AM"},
+                {"departure": "03:00 PM", "arrival": "07:30 PM"}
+            ]
         },
         "Shundorbon Express": {
-            "departure_times": ["08:30 AM", "10:00 PM"],
-            "duration": "4-5 hours",
+            "vehicle": "Intercity",
+            "total_seats": 580,
             "facilities": ["AC", "Non-AC", "Snacks"],
-            "vehicle_type": "Intercity",
-            "total_seats": 580
+            "duration": "4-5 hours",
+            "schedules": [
+                {"departure": "08:30 AM", "arrival": "01:00 PM"},
+                {"departure": "10:00 PM", "arrival": "02:30 AM"}
+            ]
         },
         "Joyentika Express": {
-            "departure_times": ["06:00 AM", "02:00 PM"],
-            "duration": "5-6 hours",
+            "vehicle": "Express",
+            "total_seats": 550,
             "facilities": ["AC", "Meal included"],
-            "vehicle_type": "Express",
-            "total_seats": 550
+            "duration": "5-6 hours",
+            "schedules": [
+                {"departure": "06:00 AM", "arrival": "11:00 AM"},
+                {"departure": "02:00 PM", "arrival": "07:00 PM"}
+            ]
         }
     },
     "plane": {
         "Biman Bangladesh Airlines": {
-            "departure_times": ["08:00 AM", "12:00 PM", "04:00 PM", "08:00 PM"],
-            "duration": "45-60 minutes",
+            "vehicle": "Boeing 737",
+            "total_seats": 150,
             "facilities": ["Meal included", "Baggage 20kg", "Entertainment"],
-            "vehicle_type": "Boeing 737",
-            "total_seats": 150
+            "duration": "45-60 minutes",
+            "schedules": [
+                {"departure": "08:00 AM", "arrival": "09:00 AM"},
+                {"departure": "12:00 PM", "arrival": "01:00 PM"},
+                {"departure": "04:00 PM", "arrival": "05:00 PM"},
+                {"departure": "08:00 PM", "arrival": "09:00 PM"}
+            ]
         },
         "US-Bangla Airlines": {
-            "departure_times": ["09:00 AM", "01:00 PM", "05:00 PM", "09:00 PM"],
-            "duration": "45-60 minutes",
+            "vehicle": "ATR 72",
+            "total_seats": 70,
             "facilities": ["Snacks included", "Baggage 15kg"],
-            "vehicle_type": "ATR 72",
-            "total_seats": 70
+            "duration": "45-60 minutes",
+            "schedules": [
+                {"departure": "09:00 AM", "arrival": "10:00 AM"},
+                {"departure": "01:00 PM", "arrival": "02:00 PM"},
+                {"departure": "05:00 PM", "arrival": "06:00 PM"},
+                {"departure": "09:00 PM", "arrival": "10:00 PM"}
+            ]
         }
     }
 }
 
 # ==================== HELPER FUNCTIONS ====================
+
 def get_all_cities():
     """Get all unique cities from all routes"""
     cities = set()
@@ -157,16 +202,37 @@ def get_available_destinations(transport_type, from_city):
     return destinations
 
 def get_all_operators_with_schedules(transport_type):
-    """Get all operators with their full schedule information"""
+    """Get all operators with their full schedule information (grouped by operator)"""
     transport_type = transport_type.lower()
     operators = []
-    for op_name, schedule in OPERATOR_SCHEDULES.get(transport_type, {}).items():
+    for op_name, op_data in OPERATOR_SCHEDULES.get(transport_type, {}).items():
         operators.append({
             "name": op_name,
-            "departure_times": schedule.get("departure_times", []),
-            "duration": schedule.get("duration", ""),
-            "facilities": schedule.get("facilities", []),
-            "vehicle_type": schedule.get("vehicle_type", ""),
-            "total_seats": schedule.get("total_seats", 0)
+            "departure_times": [s["departure"] for s in op_data.get("schedules", [])],
+            "duration": op_data.get("duration", ""),
+            "facilities": op_data.get("facilities", []),
+            "vehicle_type": op_data.get("vehicle", ""),
+            "total_seats": op_data.get("total_seats", 0)
         })
     return operators
+
+def get_all_schedules_as_list(transport_type):
+    """Get all schedules as individual items (each departure time as separate entry)"""
+    transport_type = transport_type.lower()
+    all_schedules = []
+    
+    for op_name, op_data in OPERATOR_SCHEDULES.get(transport_type, {}).items():
+        for schedule in op_data.get("schedules", []):
+            all_schedules.append({
+                "operator": op_name,
+                "vehicle": op_data.get("vehicle", ""),
+                "total_seats": op_data.get("total_seats", 0),
+                "facilities": op_data.get("facilities", []),
+                "duration": op_data.get("duration", ""),
+                "departure": schedule.get("departure", ""),
+                "arrival": schedule.get("arrival", "")
+            })
+    
+    # Sort by departure time
+    all_schedules.sort(key=lambda x: x["departure"])
+    return all_schedules

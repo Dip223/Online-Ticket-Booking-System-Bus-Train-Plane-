@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BD Ticket — Seat Selection</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/seat_ticket.css">
+</head>
+
+<body class="{{ transport_type }}">
+<nav>
+  <a href="/dashboard" class="logo">
+    <div class="logo-box">
+      <i class="fas fa-ticket-alt"></i>
+    </div>
+    <div class="logo-name">BD<span>Ticket</span></div>
+  </a>
+
+  <button class="nav-btn" onclick="logout()">Logout</button>
+</nav>
+
+<div class="page">
+  <section class="hero-card">
+    <div>
+      <span class="badge" id="transportBadge">Seat Selection</span>
+      <h1 id="pageTitle">Select Your Seat</h1>
+      <p id="journeyText">Loading journey details...</p>
+    </div>
+
+    <div class="summary-mini">
+      <span>Selected Seat</span>
+      <strong id="selectedSeatText">None</strong>
+    </div>
+  </section>
+
+  <section class="main-grid">
+    <div class="seat-card">
+      <div class="seat-head">
+        <h2 id="layoutTitle">Seat Layout</h2>
+
+        <div class="legend">
+          <span><i class="dot available"></i> Available</span>
+          <span><i class="dot selected"></i> Selected</span>
+          <span><i class="dot booked"></i> Booked</span>
+        </div>
+      </div>
+
+      <div class="vehicle-shell">
+        <div class="front-label" id="frontLabel">FRONT</div>
+        <div id="seatGrid" class="seat-grid"></div>
+      </div>
+    </div>
+
+    <aside class="booking-card">
+      <h2>Booking Summary</h2>
+
+      <div class="info-row">
+        <span>Transport</span>
+        <strong id="sumType">-</strong>
+      </div>
+
+      <div class="info-row">
+        <span>Route</span>
+        <strong id="sumRoute">-</strong>
+      </div>
+
+      <div class="info-row">
+        <span>Operator</span>
+        <strong id="sumOperator">-</strong>
+      </div>
+
+      <div class="info-row">
+        <span>Date</span>
+        <strong id="sumDate">-</strong>
+      </div>
+
+      <div class="info-row">
+        <span>Fare</span>
+        <strong id="sumFare">-</strong>
+      </div>
+
+      <div class="info-row">
+        <span>Seat Class</span>
+        <strong id="sumClass">-</strong>
+      </div>
+
+      <p class="note" id="messageBox">
+        Choose an available seat to continue.
+      </p>
+
+      <button class="confirm-btn" id="confirmBtn" onclick="confirmBooking()" disabled>
+        Confirm Booking & Generate Ticket
+      </button>
+
+      <button class="back-btn" onclick="history.back()">
+        Back
+      </button>
+    </aside>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "http://127.0.0.1:5000";
+const TRANSPORT_TYPE = "{{ transport_type }}";
+const STORAGE_KEY = TRANSPORT_TYPE + "_selection";
+
+let journey = {};
+let selectedSeat = null;
+
+function titleCase(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function getToken() {
+  return localStorage.getItem("token") || "";
+}
+
+function logout() {
+  localStorage.clear();
+  window.location = "/";
+}
+
+function showToast(msg, type = "ok") {
+  const el = document.getElementById("toast");
+  el.innerHTML = msg;
+  el.className = "toast " + type + " show";
+
+  setTimeout(() => {
+    el.classList.remove("show");
+  }, 3500);
+}
+
+function loadJourneyFromStorage() {
+  journey = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+
+  if (!journey.source || !journey.destination || !journey.operator || !journey.journeyDate) {
+    showToast("Journey data missing. Please select route and operator again.", "err");
+
+    setTimeout(() => {
+      window.location = "/" + TRANSPORT_TYPE;
+    }, 1200);
+
+    return false;
+  }
+
+  document.getElementById("transportBadge").textContent = titleCase(TRANSPORT_TYPE);
+  document.getElementById("pageTitle").textContent = `${titleCase(TRANSPORT_TYPE)} Seat Selection`;
+  document.getElementById("journeyText").textContent = `${journey.source} → ${journey.destination}`;
+
+  document.getElementById("sumType").textContent = titleCase(TRANSPORT_TYPE);
+  document.getElementById("sumRoute").textContent = `${journey.source} → ${journey.destination}`;
+  document.getElementById("sumOperator").textContent = journey.operator;
+  document.getElementById("sumDate").textContent = journey.journeyDate;
+  document.getElementById("sumFare").textContent = "৳" + journey.price;
+
+const layoutTitles = {
+  bus: "Bus Layout — 36 Seats",
+  train: "Train Layout — 6 Bogies",
+  plane: "Aircraft Seat Map — Business + Economy"
+};
+
+  const frontLabels = {
+  bus: "DRIVER",
+  train: "TRAIN — 6 BOGIES",
+  plane: "AIRCRAFT CABIN"
+};
+
+  document.getElementById("layoutTitle").textContent = layoutTitles[TRANSPORT_TYPE] || "Seat Layout";
+  document.getElementById("frontLabel").textContent = frontLabels[TRANSPORT_TYPE] || "FRONT";
+
+  return true;
+}
+
+async function loadSeats() {
+  const url = `${API}/seats/${TRANSPORT_TYPE}?source=${encodeURIComponent(journey.source)}&destination=${encodeURIComponent(journey.destination)}&operator=${encodeURIComponent(journey.operator)}&journey_date=${encodeURIComponent(journey.journeyDate)}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!res.ok) {
+    showToast(data.message || "Could not load seats.", "err");
+    return;
+  }
+
+  renderSeats(data.seats || []);
+}
+
+function renderSeats(seats) {
+  const root = document.getElementById("seatGrid");
+
+  if (TRANSPORT_TYPE === "plane") {
+    renderPlaneCabin(seats, root);
+    return;
+  }
+
+  renderStandardSeats(seats, root);
+}
+
+
+function renderStandardSeats(seats, root) {
+  const hasSections = seats.some(seat => seat.section);
+
+  if (hasSections) {
+    root.className = "seat-sections";
+    root.innerHTML = "";
+
+    const groupedSeats = {};
+
+    seats.forEach((seat) => {
+      const sectionName = seat.section || "Seat Section";
+
+      if (!groupedSeats[sectionName]) {
+        groupedSeats[sectionName] = [];
+      }
+
+      groupedSeats[sectionName].push(seat);
+    });
+
+    Object.keys(groupedSeats).forEach((sectionName) => {
+      const sectionWrapper = document.createElement("div");
+      sectionWrapper.className = "seat-section";
+
+      const sectionTitle = document.createElement("h3");
+      sectionTitle.className = "seat-section-title";
+      sectionTitle.textContent = sectionName;
+
+      const grid = document.createElement("div");
+      grid.className = "seat-grid " + (groupedSeats[sectionName][0].layout || TRANSPORT_TYPE);
+
+      groupedSeats[sectionName].forEach((seat) => {
+        grid.appendChild(createSeatButton(seat));
+      });
+
+      sectionWrapper.appendChild(sectionTitle);
+      sectionWrapper.appendChild(grid);
+      root.appendChild(sectionWrapper);
+    });
+
+    return;
+  }
+
+  root.className = "seat-grid " + TRANSPORT_TYPE;
+  root.innerHTML = "";
+
+  seats.forEach((seat) => {
+    root.appendChild(createSeatButton(seat));
+  });
+}
+
+
+function renderPlaneCabin(seats, root) {
+  root.className = "plane-cabin-ui";
+  root.innerHTML = "";
+
+  const businessSeats = seats.filter(seat =>
+    String(seat.class_type || "").toLowerCase().includes("business")
+  );
+
+  const economySeats = seats.filter(seat =>
+    !String(seat.class_type || "").toLowerCase().includes("business")
+  );
+
+  const bookedCount = seats.filter(seat => seat.status === "booked").length;
+  const availableCount = seats.length - bookedCount;
+
+  root.innerHTML = `
+    <div class="plane-nose">
+      <div class="cockpit-icon">
+        <i class="fas fa-plane"></i>
+      </div>
+      <h3>Aircraft Cabin</h3>
+      <p>Select your preferred flight seat</p>
+
+      <div class="plane-stats">
+        <div>
+          <span>Total Seats</span>
+          <strong>${seats.length}</strong>
+        </div>
+        <div>
+          <span>Available</span>
+          <strong>${availableCount}</strong>
+        </div>
+        <div>
+          <span>Booked</span>
+          <strong>${bookedCount}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="plane-seat-sections" id="planeSeatSections"></div>
+  `;
+
+  const sectionsContainer = document.getElementById("planeSeatSections");
+
+  if (businessSeats.length > 0) {
+    sectionsContainer.appendChild(
+      renderPlaneSection(
+        "Business Class",
+        "Premium 2 × 2 seating",
+        businessSeats,
+        "plane-business",
+        "business"
+      )
+    );
+  }
+
+  if (economySeats.length > 0) {
+    sectionsContainer.appendChild(
+      renderPlaneSection(
+        "Economy Class",
+        "Standard 3 × 3 seating",
+        economySeats,
+        "plane-economy",
+        "economy"
+      )
+    );
+  }
+}
+
+
+function renderPlaneSection(title, subtitle, seats, layoutClass, sectionType) {
+  const sectionWrapper = document.createElement("div");
+  sectionWrapper.className = "plane-zone " + sectionType;
+
+  const header = document.createElement("div");
+  header.className = "plane-zone-header";
+  header.innerHTML = `
+    <div>
+      <h3>${title}</h3>
+      <p>${subtitle}</p>
+    </div>
+    <span>${seats.length} seats</span>
+  `;
+
+  const gridWrapper = document.createElement("div");
+  gridWrapper.className = "plane-grid-wrapper";
+
+  if (sectionType === "economy") {
+    const wingLabels = document.createElement("div");
+    wingLabels.className = "plane-wing-labels";
+    wingLabels.innerHTML = `
+      <span>LEFT WING</span>
+      <span>RIGHT WING</span>
+    `;
+    gridWrapper.appendChild(wingLabels);
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "seat-grid " + layoutClass;
+
+  seats.forEach((seat) => {
+    grid.appendChild(createSeatButton(seat));
+  });
+
+  gridWrapper.appendChild(grid);
+
+  sectionWrapper.appendChild(header);
+  sectionWrapper.appendChild(gridWrapper);
+
+  return sectionWrapper;
+}
+
+
+function createSeatButton(seat) {
+  const btn = document.createElement("button");
+
+  const seatClassName = String(seat.class_type || "").toLowerCase().includes("business")
+    ? "business-seat"
+    : "economy-seat";
+
+  btn.className = `seat ${seat.status} ${seatClassName}`;
+  btn.textContent = seat.seat_no;
+  btn.dataset.seatNo = seat.seat_no;
+  btn.dataset.seatClass = seat.class_type;
+  btn.disabled = seat.status === "booked";
+
+  btn.onclick = () => selectSeat(btn, seat);
+
+  return btn;
+}
+
+  function createSeatButton(seat) {
+  const btn = document.createElement("button");
+
+  const seatClassName = String(seat.class_type || "").toLowerCase().includes("business")
+    ? "business-seat"
+    : "economy-seat";
+
+  btn.className = `seat ${seat.status} ${seatClassName}`;
+  btn.textContent = seat.seat_no;
+  btn.dataset.seatNo = seat.seat_no;
+  btn.dataset.seatClass = seat.class_type;
+  btn.disabled = seat.status === "booked";
+
+  btn.onclick = () => selectSeat(btn, seat);
+
+  return btn;
+}
+
+function selectSeat(button, seat) {
+  document.querySelectorAll(".seat.selected").forEach(btn => {
+    btn.classList.remove("selected");
+    btn.classList.add("available");
+  });
+
+  button.classList.remove("available");
+  button.classList.add("selected");
+
+  selectedSeat = seat;
+
+  document.getElementById("selectedSeatText").textContent = seat.seat_no;
+  document.getElementById("sumClass").textContent = seat.class_type;
+  document.getElementById("messageBox").textContent = `Seat ${seat.seat_no} selected successfully.`;
+  document.getElementById("messageBox").className = "note success";
+  document.getElementById("confirmBtn").disabled = false;
+}
+
+function selectSeat(button, seat) {
+  document.querySelectorAll(".seat.selected").forEach(btn => {
+    btn.classList.remove("selected");
+    btn.classList.add("available");
+  });
+
+  button.classList.remove("available");
+  button.classList.add("selected");
+
+  selectedSeat = seat;
+
+  document.getElementById("selectedSeatText").textContent = seat.seat_no;
+  document.getElementById("sumClass").textContent = seat.class_type;
+  document.getElementById("messageBox").textContent = `Seat ${seat.seat_no} selected successfully.`;
+  document.getElementById("messageBox").className = "note success";
+  document.getElementById("confirmBtn").disabled = false;
+}
+
+async function confirmBooking() {
+  if (!selectedSeat) {
+    showToast("Please select a seat first.", "err");
+    return;
+  }
+
+  if (!getToken()) {
+    window.location = "/";
+    return;
+  }
+
+  const payload = {
+    type: titleCase(TRANSPORT_TYPE),
+    source: journey.source,
+    destination: journey.destination,
+    price: journey.price,
+    operator: journey.operator,
+    journey_date: journey.journeyDate,
+    departure_time: journey.departure_time || "Selected schedule",
+    seat_no: selectedSeat.seat_no,
+    seat_class: selectedSeat.class_type
+  };
+
+  try {
+    const res = await fetch(API + "/book", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getToken()
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.message || "Booking failed.", "err");
+      await loadSeats();
+      return;
+    }
+
+    showToast("Booking confirmed. Opening ticket...", "ok");
+
+    setTimeout(() => {
+      window.location = "/ticket-view?id=" + data.booking_id;
+    }, 800);
+
+  } catch (error) {
+    showToast("Server error. Please check Flask server.", "err");
+  }
+}
+
+window.onload = async function() {
+  if (!getToken()) {
+    window.location = "/";
+    return;
+  }
+
+  if (loadJourneyFromStorage()) {
+    await loadSeats();
+  }
+};
+</script>
+</body>
+</html>

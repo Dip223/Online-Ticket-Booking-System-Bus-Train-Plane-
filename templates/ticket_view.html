@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BD Ticket — E-Ticket</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/seat_ticket.css">
+</head>
+
+<body>
+<nav>
+  <a href="/dashboard" class="logo">
+    <div class="logo-box">
+      <i class="fas fa-ticket-alt"></i>
+    </div>
+    <div class="logo-name">BD<span>Ticket</span></div>
+  </a>
+
+  <button class="nav-btn" onclick="logout()">Logout</button>
+</nav>
+
+<div class="page">
+  <div id="ticketRoot" class="loading-card">
+    <i class="fas fa-spinner fa-spin"></i>
+    <h2>Loading ticket...</h2>
+  </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:5000";
+
+function getToken() {
+  return localStorage.getItem("token") || "";
+}
+
+function logout() {
+  localStorage.clear();
+  window.location = "/";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function sectionHtml(section) {
+  const rows = Object.entries(section.rows || {}).map(([key, value]) => `
+    <div class="ticket-row">
+      <span>${escapeHtml(key)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `).join("");
+
+  return `
+    <div class="ticket-section">
+      <h2>${escapeHtml(section.title)}</h2>
+      <div class="ticket-rows">${rows}</div>
+    </div>
+  `;
+}
+
+function renderTicket(ticket) {
+  document.body.className = ticket.theme || "";
+
+  document.getElementById("ticketRoot").className = "";
+
+  document.getElementById("ticketRoot").innerHTML = `
+    <div class="ticket-card">
+      <div class="ticket-top">
+        <div class="ticket-title-area">
+          <div class="ticket-icon">
+            <i class="fas ${escapeHtml(ticket.icon)}"></i>
+          </div>
+          <div>
+            <h1>${escapeHtml(ticket.title)}</h1>
+            <p>${escapeHtml(ticket.subtitle)}</p>
+          </div>
+        </div>
+
+        <div class="ticket-id-box">
+          <span>Ticket ID</span>
+          <strong>${escapeHtml(ticket.ticket_id)}</strong>
+        </div>
+      </div>
+
+      <div class="route-band">
+        <div class="route-text">${escapeHtml(ticket.route_line)}</div>
+        <div class="status-pill">${escapeHtml(ticket.status)}</div>
+      </div>
+
+      <div class="ticket-body">
+        <div class="ticket-info">
+          ${(ticket.sections || []).map(sectionHtml).join("")}
+        </div>
+
+        <div class="ticket-code-side">
+          <div class="fake-qr"></div>
+          <span>Ticket Code</span>
+          <strong>${escapeHtml(ticket.ticket_code)}</strong>
+          <small>Issued: ${escapeHtml(ticket.issue_time)}</small>
+        </div>
+      </div>
+
+      <div class="ticket-footer">
+        <i class="fas fa-info-circle"></i> ${escapeHtml(ticket.footer_note)}
+      </div>
+    </div>
+
+    <div class="ticket-actions">
+      <button onclick="window.print()" class="primary-action">
+        Print / Save as PDF
+      </button>
+
+      <button onclick="window.location='/dashboard'" class="secondary-action">
+        Back to Dashboard
+      </button>
+    </div>
+  `;
+}
+
+async function loadTicket() {
+  if (!getToken()) {
+    window.location = "/";
+    return;
+  }
+
+  const bookingId = new URLSearchParams(window.location.search).get("id");
+
+  if (!bookingId) {
+    document.getElementById("ticketRoot").className = "error-card";
+    document.getElementById("ticketRoot").innerHTML = "Missing booking ID.";
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API}/ticket-data/${bookingId}`, {
+      headers: {
+        "Authorization": "Bearer " + getToken()
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      document.getElementById("ticketRoot").className = "error-card";
+      document.getElementById("ticketRoot").innerHTML = data.message || "Could not load ticket.";
+      return;
+    }
+
+    renderTicket(data.ticket_view);
+
+  } catch (error) {
+    document.getElementById("ticketRoot").className = "error-card";
+    document.getElementById("ticketRoot").innerHTML = "Server error. Please check Flask server.";
+  }
+}
+
+window.onload = loadTicket;
+</script>
+</body>
+</html>

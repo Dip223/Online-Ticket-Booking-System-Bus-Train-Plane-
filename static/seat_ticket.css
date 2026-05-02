@@ -236,14 +236,12 @@ nav{
   letter-spacing:1px;
 }
 
-/* Main wrapper for multiple sections like bogies/classes */
 .seat-sections{
   display:flex;
   flex-direction:column;
   gap:28px;
 }
 
-/* Each section box: Bogie 1, Bogie 2, Business Class, Economy Class */
 .seat-section{
   background:white;
   border:1px solid var(--bdr);
@@ -251,7 +249,6 @@ nav{
   padding:18px;
 }
 
-/* Section title */
 .seat-section-title{
   font-family:'Syne',sans-serif;
   font-size:18px;
@@ -260,14 +257,12 @@ nav{
   color:var(--dark);
 }
 
-/* Common seat grid */
 .seat-grid{
   display:grid;
   justify-content:center;
   gap:10px;
 }
 
-/* Bus 2 + 2 layout */
 .seat-grid.bus-2-2{
   grid-template-columns:55px 55px 34px 55px 55px;
 }
@@ -276,7 +271,6 @@ nav{
   grid-column:4;
 }
 
-/* Train 2 + 2 layout for each bogie */
 .seat-grid.train-2-2{
   grid-template-columns:55px 55px 34px 55px 55px;
 }
@@ -285,7 +279,6 @@ nav{
   grid-column:4;
 }
 
-/* Plane Business Class: 2 + 2 layout */
 .seat-grid.plane-business{
   grid-template-columns:55px 55px 34px 55px 55px;
 }
@@ -294,7 +287,6 @@ nav{
   grid-column:4;
 }
 
-/* Plane Economy Class: 3 + 3 layout */
 .seat-grid.plane-economy{
   grid-template-columns:52px 52px 52px 34px 52px 52px 52px;
 }
@@ -302,6 +294,7 @@ nav{
 .seat-grid.plane-economy .seat:nth-child(6n+4){
   grid-column:5;
 }
+
 .seat{
   height:48px;
   border-radius:13px 13px 7px 7px;
@@ -423,7 +416,9 @@ nav{
   border-left:5px solid #16a34a;
 }
 
-/* Ticket UI */
+/* ══════════════════════════════════════
+   TICKET UI
+   ══════════════════════════════════════ */
 
 .ticket-card{
   background:white;
@@ -573,19 +568,36 @@ nav{
   text-align:center;
 }
 
+/* ══ OLD fake-qr: FULLY DISABLED — do not remove this block ══ */
 .fake-qr{
-  width:150px;
-  height:150px;
-  border-radius:18px;
-  border:2px solid var(--txt);
-  background:
-  linear-gradient(45deg,#111 25%,transparent 25%),
-  linear-gradient(-45deg,#111 25%,transparent 25%),
-  linear-gradient(45deg,transparent 75%,#111 75%),
-  linear-gradient(-45deg,transparent 75%,#111 75%);
-  background-size:24px 24px;
-  background-position:0 0,0 12px,12px -12px,-12px 0;
-  margin-bottom:14px;
+  display:none !important;
+  background:none !important;
+  border:none !important;
+  width:0 !important;
+  height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* ══ NEW: Real QR image wrapper ══ */
+.qr-wrapper{
+  width:160px;
+  height:160px;
+  margin:0 auto 12px;
+  border-radius:14px;
+  border:2px solid #e2e8f0;
+  background:#ffffff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.qr-wrapper img{
+  width:152px;
+  height:152px;
+  display:block;
+  border-radius:10px;
 }
 
 .ticket-code-side span,
@@ -630,6 +642,93 @@ nav{
   font-weight:900;
 }
 
+/* ── Payment box ── */
+.payment-box{
+  margin-top:18px;
+  padding:16px;
+  border:1px solid var(--bdr);
+  border-radius:16px;
+  background:#f8fafc;
+}
+
+.payment-box h3{
+  font-family:'Syne',sans-serif;
+  font-size:18px;
+  margin-bottom:14px;
+  color:var(--txt);
+}
+
+.payment-box label{
+  display:block;
+  margin-top:10px;
+  margin-bottom:6px;
+  color:var(--sub);
+  font-weight:800;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+
+.payment-box input,
+.payment-box select{
+  width:100%;
+  padding:12px;
+  border:1px solid var(--bdr);
+  border-radius:12px;
+  font-size:14px;
+  outline:none;
+  background:white;
+  transition:all 0.3s;
+}
+
+.payment-box input:focus,
+.payment-box select:focus{
+  border-color:var(--main);
+  box-shadow:0 0 0 3px rgba(22,163,74,0.1);
+}
+
+.payment-box input::placeholder{
+  color:#94a3b8;
+}
+
+#mobilePaymentFields,
+#cardPaymentFields{
+  transition:all 0.3s;
+}
+
+/* ── Print ── */
+@media print{
+  nav,
+  .ticket-actions{
+    display:none !important;
+  }
+
+  body{
+    background:white;
+  }
+
+  .page{
+    max-width:none;
+    margin:0;
+    padding:0;
+  }
+
+  .ticket-card{
+    box-shadow:none;
+    border-radius:0;
+  }
+
+  /* Force real QR image to print */
+  .qr-wrapper,
+  .qr-wrapper img{
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+    display:flex !important;
+    visibility:visible !important;
+  }
+}
+
+/* ── Responsive ── */
 @media(max-width:900px){
   nav{
     padding:0 18px;
@@ -660,33 +759,15 @@ nav{
   .ticket-id-box{
     text-align:left;
   }
-}
 
-@media print{
-  nav,
-  .ticket-actions{
-    display:none;
-  }
-
-  body{
-    background:white;
-  }
-
-  .page{
-    max-width:none;
-    margin:0;
-    padding:0;
-  }
-
-  .ticket-card{
-    box-shadow:none;
-    border-radius:0;
+  .payment-box{
+    margin-top:16px;
+    padding:14px;
   }
 }
 
 /* ============================================================
    PLANE CUSTOM UI
-   
    ============================================================ */
 
 body.plane{
@@ -706,8 +787,7 @@ body.plane .seat-card{
 body.plane .vehicle-shell{
   max-width:820px;
   border:none;
-  background:
-    linear-gradient(180deg, #f8fafc, #e0f2fe);
+  background:linear-gradient(180deg, #f8fafc, #e0f2fe);
   border-radius:220px 220px 38px 38px;
   padding:22px 26px 32px;
   box-shadow:
@@ -741,8 +821,7 @@ body.plane .front-label{
   margin:0 auto 24px;
   padding:30px 20px 20px;
   border-radius:180px 180px 28px 28px;
-  background:
-    linear-gradient(180deg, #ffffff, #e0f2fe);
+  background:linear-gradient(180deg, #ffffff, #e0f2fe);
   border:1px solid rgba(2,132,199,.22);
   text-align:center;
   box-shadow:0 12px 28px rgba(2,132,199,.12);
@@ -955,5 +1034,11 @@ body.plane .seat.booked{
 
   .seat-grid.plane-economy{
     grid-template-columns:44px 44px 44px 22px 44px 44px 44px;
+  }
+
+  .payment-box input,
+  .payment-box select{
+    padding:10px;
+    font-size:13px;
   }
 }

@@ -1,281 +1,222 @@
-"""
-models/payment_strategy.py
-===========================
-TRUE STRATEGY DESIGN PATTERN
-
-Strategy Pattern defines a FAMILY of algorithms (payment methods),
-encapsulates each one, and makes them interchangeable. The context
-(PaymentContext) can switch strategy at runtime without changing itself.
-
-Components:
-  PaymentStrategy  — Abstract interface (Strategy)
-  BkashPayment     — Concrete Strategy A
-  NagadPayment     — Concrete Strategy B
-  VisaCardPayment  — Concrete Strategy C
-  PaymentContext   — Context (uses a strategy, delegates to it)
-
-This means: adding MasterCard tomorrow = one new class, zero other changes.
-"""
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-import random
-import string
+import uuid
+import re
 
-
-# ── Payment Result (Value Object) ────────────────────────────────────────────
 
 @dataclass
 class PaymentReceipt:
-    """
-    Immutable payment result returned by every strategy.
-    Stored in the database as proof of payment.
-    """
-    method:        str
-    amount:        int
+    method: str
+    amount: int
+    status: str
     transaction_id: str
-    status:        str
-    timestamp:     str
-    gateway_msg:   str
+    message: str
+    paid_at: str
+    payer_reference: str = ""
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
         return {
-            "method":         self.method,
-            "amount":         self.amount,
+            "method": self.method,
+            "amount": self.amount,
+            "status": self.status,
             "transaction_id": self.transaction_id,
-            "status":         self.status,
-            "timestamp":      self.timestamp,
-            "gateway_msg":    self.gateway_msg,
+            "message": self.message,
+            "paid_at": self.paid_at,
+            "payer_reference": self.payer_reference,
         }
 
-    def display(self) -> str:
-        return (f"Paid ৳{self.amount} via {self.method} "
-                f"[TXN: {self.transaction_id}]")
-
-
-def _generate_txn(prefix: str) -> str:
-    suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
-    return f"{prefix}-{suffix}"
-
-
-# ── Abstract Strategy ─────────────────────────────────────────────────────────
 
 class PaymentStrategy(ABC):
     """
-    Abstract base for all payment strategies.
-    Every concrete strategy MUST implement process_payment().
+    Abstract Strategy.
+    All payment methods must implement pay().
     """
 
     @abstractmethod
-    def process_payment(self, amount: int, payer_info: dict) -> PaymentReceipt:
-        """
-        Simulate processing a payment.
-        Returns a PaymentReceipt regardless of the underlying method.
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def method_name(self) -> str:
-        """Human-readable payment method name."""
-        ...
-
-    @property
-    @abstractmethod
-    def method_key(self) -> str:
-        """Short key used in API requests (e.g. 'bkash')."""
-        ...
+    def pay(self, amount: int, payer_info: dict) -> PaymentReceipt:
+        pass
 
 
-# ── Concrete Strategies ───────────────────────────────────────────────────────
+class BkashPaymentStrategy(PaymentStrategy):
+    def pay(self, amount: int, payer_info: dict) -> PaymentReceipt:
+        phone = payer_info.get("phone", "").strip()
+        pin = payer_info.get("pin", "").strip()
 
-class BkashPayment(PaymentStrategy):
-    """
-    bKash Mobile Banking strategy.
-    Simulates bKash gateway: generates a TXN ID, validates wallet.
-    """
+        if not self._is_valid_bd_phone(phone):
+            raise ValueError("Invalid bKash phone number.")
 
-    @property
-    def method_name(self) -> str:
-        return "bKash"
+        if len(pin) < 4:
+            raise ValueError("Invalid bKash PIN.")
 
-    @property
-    def method_key(self) -> str:
-        return "bkash"
-
-    def process_payment(self, amount: int, payer_info: dict) -> PaymentReceipt:
-        # Simulate bKash gateway processing
-        txn_id = _generate_txn("BKS")
-        phone  = payer_info.get("phone", "01XXXXXXXXX")
+        transaction_id = "BKS-" + uuid.uuid4().hex[:12].upper()
 
         return PaymentReceipt(
-            method         = self.method_name,
-            amount         = amount,
-            transaction_id = txn_id,
-            status         = "SUCCESS",
-            timestamp      = datetime.utcnow().isoformat(),
-            gateway_msg    = (
-                f"bKash payment of ৳{amount} received from {phone}. "
-                f"Transaction ID: {txn_id}. Your bKash account has been debited."
-            ),
+            method="bKash",
+            amount=amount,
+            status="PAID",
+            transaction_id=transaction_id,
+            message="bKash payment completed successfully.",
+            paid_at=datetime.utcnow().isoformat(),
+            payer_reference=self._mask_phone(phone)
         )
 
+    def _is_valid_bd_phone(self, phone: str) -> bool:
+        return bool(re.match(r"^01[0-9]{9}$", phone))
 
-class NagadPayment(PaymentStrategy):
-    """
-    Nagad Mobile Banking strategy.
-    Simulates Nagad gateway processing.
-    """
+    def _mask_phone(self, phone: str) -> str:
+        return phone[:3] + "***" + phone[-3:]
 
-    @property
-    def method_name(self) -> str:
-        return "Nagad"
 
-    @property
-    def method_key(self) -> str:
-        return "nagad"
+class NagadPaymentStrategy(PaymentStrategy):
+    def pay(self, amount: int, payer_info: dict) -> PaymentReceipt:
+        phone = payer_info.get("phone", "").strip()
+        pin = payer_info.get("pin", "").strip()
 
-    def process_payment(self, amount: int, payer_info: dict) -> PaymentReceipt:
-        txn_id = _generate_txn("NGD")
-        phone  = payer_info.get("phone", "01XXXXXXXXX")
+        if not self._is_valid_bd_phone(phone):
+            raise ValueError("Invalid Nagad phone number.")
+
+        if len(pin) < 4:
+            raise ValueError("Invalid Nagad PIN.")
+
+        transaction_id = "NGD-" + uuid.uuid4().hex[:12].upper()
 
         return PaymentReceipt(
-            method         = self.method_name,
-            amount         = amount,
-            transaction_id = txn_id,
-            status         = "SUCCESS",
-            timestamp      = datetime.utcnow().isoformat(),
-            gateway_msg    = (
-                f"Nagad payment of ৳{amount} confirmed from {phone}. "
-                f"Reference: {txn_id}. Nagad balance updated."
-            ),
+            method="Nagad",
+            amount=amount,
+            status="PAID",
+            transaction_id=transaction_id,
+            message="Nagad payment completed successfully.",
+            paid_at=datetime.utcnow().isoformat(),
+            payer_reference=self._mask_phone(phone)
         )
 
+    def _is_valid_bd_phone(self, phone: str) -> bool:
+        return bool(re.match(r"^01[0-9]{9}$", phone))
 
-class VisaCardPayment(PaymentStrategy):
-    """
-    Visa Card (Debit/Credit) strategy.
-    Simulates card gateway: masks card number, runs authorization.
-    """
+    def _mask_phone(self, phone: str) -> str:
+        return phone[:3] + "***" + phone[-3:]
 
-    @property
-    def method_name(self) -> str:
-        return "Visa Card"
 
-    @property
-    def method_key(self) -> str:
-        return "visa"
+class CardPaymentStrategy(PaymentStrategy):
+    def pay(self, amount: int, payer_info: dict) -> PaymentReceipt:
+        card_number = payer_info.get("card_number", "").replace(" ", "").strip()
+        card_holder = payer_info.get("card_holder", "").strip()
+        expiry = payer_info.get("expiry", "").strip()
+        cvv = payer_info.get("cvv", "").strip()
 
-    def process_payment(self, amount: int, payer_info: dict) -> PaymentReceipt:
-        txn_id   = _generate_txn("VIS")
-        card_num = payer_info.get("card_number", "4XXX XXXX XXXX XXXX")
-        masked   = "**** **** **** " + str(card_num)[-4:]
+        if not card_holder:
+            raise ValueError("Card holder name is required.")
+
+        if not self._is_valid_card_number(card_number):
+            raise ValueError("Invalid card number.")
+
+        if not self._is_valid_expiry(expiry):
+            raise ValueError("Invalid card expiry. Use MM/YY format.")
+
+        if not self._is_valid_cvv(cvv):
+            raise ValueError("Invalid CVV.")
+
+        transaction_id = "CRD-" + uuid.uuid4().hex[:12].upper()
 
         return PaymentReceipt(
-            method         = self.method_name,
-            amount         = amount,
-            transaction_id = txn_id,
-            status         = "AUTHORISED",
-            timestamp      = datetime.utcnow().isoformat(),
-            gateway_msg    = (
-                f"Visa card {masked} charged ৳{amount}. "
-                f"Authorization code: {txn_id}. Bank approved."
-            ),
+            method="Card",
+            amount=amount,
+            status="PAID",
+            transaction_id=transaction_id,
+            message="Card payment completed successfully.",
+            paid_at=datetime.utcnow().isoformat(),
+            payer_reference=self._mask_card(card_number)
         )
 
+    def _is_valid_card_number(self, card_number: str) -> bool:
+        if not card_number.isdigit():
+            return False
 
-class MasterCardPayment(PaymentStrategy):
-    """MasterCard strategy — shows how easy it is to add a new method."""
+        if len(card_number) < 13 or len(card_number) > 19:
+            return False
 
-    @property
-    def method_name(self) -> str:
-        return "MasterCard"
+        return self._luhn_check(card_number)
 
-    @property
-    def method_key(self) -> str:
-        return "mastercard"
+    def _luhn_check(self, card_number: str) -> bool:
+        digits = [int(digit) for digit in card_number]
+        checksum = 0
+        parity = len(digits) % 2
 
-    def process_payment(self, amount: int, payer_info: dict) -> PaymentReceipt:
-        txn_id = _generate_txn("MCD")
-        masked = "**** **** **** " + str(payer_info.get("card_number", "0000"))[-4:]
+        for index, digit in enumerate(digits):
+            if index % 2 == parity:
+                digit *= 2
+                if digit > 9:
+                    digit -= 9
+            checksum += digit
 
-        return PaymentReceipt(
-            method         = self.method_name,
-            amount         = amount,
-            transaction_id = txn_id,
-            status         = "AUTHORISED",
-            timestamp      = datetime.utcnow().isoformat(),
-            gateway_msg    = (
-                f"MasterCard {masked} charged ৳{amount}. "
-                f"Auth code: {txn_id}."
-            ),
-        )
+        return checksum % 10 == 0
 
+    def _is_valid_expiry(self, expiry: str) -> bool:
+        if not re.match(r"^(0[1-9]|1[0-2])\/[0-9]{2}$", expiry):
+            return False
 
-# ── Context ───────────────────────────────────────────────────────────────────
+        month, year = expiry.split("/")
+        expiry_year = int("20" + year)
+        expiry_month = int(month)
+
+        now = datetime.utcnow()
+
+        if expiry_year < now.year:
+            return False
+
+        if expiry_year == now.year and expiry_month < now.month:
+            return False
+
+        return True
+
+    def _is_valid_cvv(self, cvv: str) -> bool:
+        return bool(re.match(r"^[0-9]{3,4}$", cvv))
+
+    def _mask_card(self, card_number: str) -> str:
+        return "****-****-****-" + card_number[-4:]
+
 
 class PaymentContext:
     """
-    Strategy Pattern Context.
-
-    Holds a reference to a PaymentStrategy and delegates
-    payment processing entirely to it. The context does NOT
-    know or care which concrete strategy is used.
-
-    The strategy can be swapped at runtime via set_strategy().
+    Context class.
+    Receives a strategy and executes payment.
     """
 
     def __init__(self, strategy: PaymentStrategy):
-        self._strategy = strategy
+        self.strategy = strategy
 
-    def set_strategy(self, strategy: PaymentStrategy) -> None:
-        """Swap strategy at runtime — the hallmark of Strategy Pattern."""
-        self._strategy = strategy
+    def execute_payment(self, amount: int, payer_info: dict) -> PaymentReceipt:
+        return self.strategy.pay(amount, payer_info)
 
-    def execute_payment(self, amount: int, payer_info: dict = None) -> PaymentReceipt:
-        """Delegate to whichever strategy is currently set."""
-        if payer_info is None:
-            payer_info = {}
-        return self._strategy.process_payment(amount, payer_info)
-
-    @property
-    def current_method(self) -> str:
-        return self._strategy.method_name
-
-
-# ── Strategy Registry (no if/else needed in routes) ──────────────────────────
 
 class PaymentStrategyFactory:
     """
-    Registry of all available payment strategies.
-    Routes call get_strategy(key) — zero if/else needed.
+    Selects the correct payment strategy based on payment method string.
     """
 
-    _registry: dict[str, type[PaymentStrategy]] = {}
+    @staticmethod
+    def get_strategy(payment_method: str) -> PaymentStrategy:
+        method = str(payment_method).lower().strip()
 
-    @classmethod
-    def register(cls, strategy_class: type[PaymentStrategy]) -> None:
-        instance = strategy_class()
-        cls._registry[instance.method_key] = strategy_class
+        if method == "bkash":
+            return BkashPaymentStrategy()
 
-    @classmethod
-    def get_strategy(cls, key: str) -> PaymentStrategy:
-        strategy_class = cls._registry.get(key.lower())
-        if strategy_class is None:
-            raise KeyError(
-                f"Unknown payment method '{key}'. "
-                f"Available: {list(cls._registry.keys())}"
-            )
-        return strategy_class()
+        if method == "nagad":
+            return NagadPaymentStrategy()
 
-    @classmethod
-    def available_methods(cls) -> list[str]:
-        return list(cls._registry.keys())
+        if method in ["card", "visa", "mastercard", "credit_card", "debit_card"]:
+            return CardPaymentStrategy()
+
+        raise ValueError(f"Unsupported payment method: {payment_method}")
 
 
-# Auto-register all strategies on import
-PaymentStrategyFactory.register(BkashPayment)
-PaymentStrategyFactory.register(NagadPayment)
-PaymentStrategyFactory.register(VisaCardPayment)
-PaymentStrategyFactory.register(MasterCardPayment)
+# Optional alias — prevents errors if any route imports PaymentStrategySelector.
+class PaymentStrategySelector:
+    @staticmethod
+    def get_strategy(payment_method: str) -> PaymentStrategy:
+        return PaymentStrategyFactory.get_strategy(payment_method)
+
+    @staticmethod
+    def select(payment_method: str) -> PaymentStrategy:
+        return PaymentStrategyFactory.get_strategy(payment_method)

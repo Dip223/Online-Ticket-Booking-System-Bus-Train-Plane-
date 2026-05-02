@@ -177,14 +177,31 @@ function showPrice() {
   if (disp) disp.textContent = price;
 }
 
-/* ── BOOK (Dashboard) ─────────────────────────────────────── */
+/* ── PAYMENT METHOD TOGGLE ───────────────────────────────── */
+function togglePaymentFields() {
+  const method = document.getElementById("paymentMethod")?.value;
+  const mobileFields = document.getElementById("mobilePaymentFields");
+  const cardFields = document.getElementById("cardPaymentFields");
+
+  if (!mobileFields || !cardFields) return;
+
+  if (method === "card") {
+    mobileFields.style.display = "none";
+    cardFields.style.display = "block";
+  } else {
+    mobileFields.style.display = "block";
+    cardFields.style.display = "none";
+  }
+}
+
+/* ── BOOK (Dashboard with Payment) ───────────────────────── */
 function book() {
   if (!getToken()) { alert("Please login first"); window.location = "/"; return; }
 
   const srcEl    = document.getElementById("source");
   const destEl   = document.getElementById("destination");
   const opEl     = document.getElementById("operator");
-  const payEl    = document.getElementById("payment");
+  const payMethodEl = document.getElementById("paymentMethod");
 
   if (!srcEl || !destEl) return;
 
@@ -193,34 +210,56 @@ function book() {
   const destination = destVal[0];
   const price       = destVal[1] || "0";
   const operator    = opEl ? opEl.value : "";
-  const payment     = payEl ? payEl.value : "bkash";
+  const paymentMethod = payMethodEl ? payMethodEl.value : "bkash";
   const type        = _curType.charAt(0).toUpperCase() + _curType.slice(1);
+  const journeyDate = document.getElementById("journeyDate")?.value || new Date().toISOString().split('T')[0];
+  const seatNo      = document.getElementById("seatNo")?.value || "A1";
+  const seatClass   = document.getElementById("seatClass")?.value || "Economy";
 
   if (!destination) { showToast("Please select a destination ❌", "err"); return; }
   if (!operator)    { showToast("Please select an operator ❌",    "err"); return; }
 
+  // Get payment details based on method
+  let payload = {
+    source, destination, price, type, operator, payment_method: paymentMethod,
+    journey_date: journeyDate, seat_no: seatNo, seat_class: seatClass
+  };
+
+  if (paymentMethod === "card") {
+    payload.card_holder = document.getElementById("cardHolder")?.value || "";
+    payload.card_number = document.getElementById("cardNumber")?.value || "";
+    payload.expiry = document.getElementById("expiry")?.value || "";
+    payload.cvv = document.getElementById("cvv")?.value || "";
+  } else {
+    payload.phone = document.getElementById("phone")?.value || "";
+    payload.pin = document.getElementById("pin")?.value || "";
+  }
+
   fetch(API + "/book", {
     method:  "POST",
     headers: authHeader(),
-    body:    JSON.stringify({ source, destination, price, type, operator, payment })
+    body:    JSON.stringify(payload)
   })
   .then(r => { if (r.status === 401) { localStorage.clear(); window.location = "/"; } return r.json(); })
   .then(d => {
     const ok = d.message && (d.message.includes("✅") || d.message.toLowerCase().includes("success"));
     showToast(d.message, ok ? "ok" : "err");
-    if (ok) setTimeout(loadBookings, 900);
+    if (ok) {
+      setTimeout(loadBookings, 900);
+      if (d.redirect_url) setTimeout(() => window.location = d.redirect_url, 1500);
+    }
   })
   .catch(() => showToast("Server error ❌", "err"));
 }
 
-/* ── BOOK (individual transport pages) ───────────────────── */
+/* ── BOOK (individual transport pages with Payment) ──────── */
 function bookFromPage(type, routesArray) {
   if (!getToken()) { alert("Please login first"); window.location = "/"; return; }
 
   const srcEl  = document.getElementById("source");
   const destEl = document.getElementById("destination");
   const opEl   = document.getElementById("operator");
-  const payEl  = document.getElementById("payment");
+  const payMethodEl = document.getElementById("paymentMethod");
 
   if (!srcEl || !destEl) return;
 
@@ -229,20 +268,39 @@ function bookFromPage(type, routesArray) {
   const destination = destVal[0];
   const price       = destVal[1] || "0";
   const operator    = opEl ? opEl.value : "";
-  const payment     = payEl ? payEl.value : "bkash";
+  const paymentMethod = payMethodEl ? payMethodEl.value : "bkash";
+  const journeyDate = document.getElementById("journeyDate")?.value || new Date().toISOString().split('T')[0];
+  const seatNo      = document.getElementById("seatNo")?.value || "A1";
+  const seatClass   = document.getElementById("seatClass")?.value || "Economy";
 
   if (!destination) { showToast("Select destination ❌", "err"); return; }
   if (!operator)    { showToast("Select operator ❌",    "err"); return; }
 
+  let payload = {
+    source, destination, price, type, operator, payment_method: paymentMethod,
+    journey_date: journeyDate, seat_no: seatNo, seat_class: seatClass
+  };
+
+  if (paymentMethod === "card") {
+    payload.card_holder = document.getElementById("cardHolder")?.value || "";
+    payload.card_number = document.getElementById("cardNumber")?.value || "";
+    payload.expiry = document.getElementById("expiry")?.value || "";
+    payload.cvv = document.getElementById("cvv")?.value || "";
+  } else {
+    payload.phone = document.getElementById("phone")?.value || "";
+    payload.pin = document.getElementById("pin")?.value || "";
+  }
+
   fetch(API + "/book", {
     method:  "POST",
     headers: authHeader(),
-    body:    JSON.stringify({ source, destination, price, type, operator, payment })
+    body:    JSON.stringify(payload)
   })
   .then(r => { if (r.status === 401) { localStorage.clear(); window.location = "/"; } return r.json(); })
   .then(d => {
     const ok = d.message && (d.message.includes("✅") || d.message.toLowerCase().includes("success"));
     showToast(d.message, ok ? "ok" : "err");
+    if (ok && d.redirect_url) setTimeout(() => window.location = d.redirect_url, 1500);
   })
   .catch(() => showToast("Server error ❌", "err"));
 }
@@ -293,7 +351,7 @@ function loadBookings() {
               <div class="bk-meta">
                 <span><i class="fas fa-tag"></i>${t.type}</span>
                 <span><i class="fas fa-building"></i>${b.operator || "N/A"}</span>
-                <span><i class="fas fa-credit-card"></i>${pay.method || ""}</span>
+                <span><i class="fas fa-credit-card"></i>${pay.method || "N/A"}</span>
                 ${pay.transaction_id ? `<span><i class="fas fa-receipt"></i>${pay.transaction_id}</span>` : ""}
               </div>
             </div>

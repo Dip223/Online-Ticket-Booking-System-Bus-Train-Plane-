@@ -30,25 +30,25 @@ class TicketView:
 
     def to_dict(self):
         return {
-            "ticket_id": self.ticket_id,
-            "title": self.title,
-            "subtitle": self.subtitle,
+            "ticket_id":      self.ticket_id,
+            "title":          self.title,
+            "subtitle":       self.subtitle,
             "transport_type": self.transport_type,
-            "theme": self.theme,
-            "icon": self.icon,
-            "route_line": self.route_line,
-            "status": self.status,
-            "issue_time": self.issue_time,
-            "footer_note": self.footer_note,
-            "ticket_code": self.ticket_code,
-            "sections": self.sections,
+            "theme":          self.theme,
+            "icon":           self.icon,
+            "route_line":     self.route_line,
+            "status":         self.status,
+            "issue_time":     self.issue_time,
+            "footer_note":    self.footer_note,
+            "ticket_code":    self.ticket_code,
+            "sections":       self.sections,
         }
 
 
 class TicketBuilder(ABC):
     """
     Abstract Builder class.
-    It defines the steps for building a complete ticket.
+    Defines the construction steps for a complete ticket.
     """
 
     def __init__(self):
@@ -64,39 +64,43 @@ class TicketBuilder(ABC):
     def add_passenger_info(self, booking_doc: dict, user_doc: dict):
         self.product.add_section("Passenger Information", {
             "Passenger Name": user_doc.get("name", "Passenger"),
-            "Email": user_doc.get("email", "N/A"),
-            "User ID": str(booking_doc.get("user_id", "N/A")),
+            "Email":          user_doc.get("email", "N/A"),
+            "User ID":        str(booking_doc.get("user_id", "N/A")),
         })
 
     def add_journey_info(self, booking_doc: dict, user_doc: dict):
         ticket = booking_doc.get("ticket", {})
-
-        source = ticket.get("source", "N/A")
+        source      = ticket.get("source", "N/A")
         destination = ticket.get("destination", "N/A")
 
         self.product.route_line = f"{source} → {destination}"
 
         self.product.add_section("Journey Information", {
-            "From": source,
-            "To": destination,
-            "Journey Date": booking_doc.get("journey_date", "N/A"),
+            "From":           source,
+            "To":             destination,
+            "Journey Date":   booking_doc.get("journey_date", "N/A"),
             "Departure Time": booking_doc.get("departure_time", "N/A"),
-            "Operator": booking_doc.get("operator", "N/A"),
+            "Operator":       booking_doc.get("operator", "N/A"),
         })
 
     def add_seat_info(self, booking_doc: dict, user_doc: dict):
         self.product.add_section("Seat Information", {
             "Selected Seat": booking_doc.get("seat_no", "N/A"),
-            "Seat Class": booking_doc.get("seat_class", "N/A"),
-            "Layout": booking_doc.get("seat_layout", "N/A"),
+            "Seat Class":    booking_doc.get("seat_class", "N/A"),
+            "Layout":        booking_doc.get("seat_layout", "N/A"),
         })
 
+    # ── FIX: was accidentally de-indented to module level ──────────────────────
     def add_fare_info(self, booking_doc: dict, user_doc: dict):
-        ticket = booking_doc.get("ticket", {})
+        ticket  = booking_doc.get("ticket", {})
+        payment = booking_doc.get("payment", {})
 
-        self.product.add_section("Fare Information", {
-            "Ticket Fare": f"৳{ticket.get('price', 0)}",
-            "Payment": "Not included in this module",
+        self.product.add_section("Payment Information", {
+            "Ticket Fare":    f"৳{ticket.get('price', 0)}",
+            "Payment Method": payment.get("method", "N/A"),
+            "Payment Status": payment.get("status", "N/A"),
+            "Transaction ID": payment.get("transaction_id", "N/A"),
+            "Paid At":        payment.get("paid_at", "N/A"),
         })
 
     @abstractmethod
@@ -108,7 +112,7 @@ class TicketBuilder(ABC):
         pass
 
     def add_footer(self, booking_doc: dict, user_doc: dict):
-        self.product.issue_time = datetime.now().strftime("%d %b %Y, %I:%M %p")
+        self.product.issue_time  = datetime.now().strftime("%d %b %Y, %I:%M %p")
         self.product.ticket_code = self.product.ticket_id
 
     def return_product(self):
@@ -118,97 +122,90 @@ class TicketBuilder(ABC):
 
 
 class BusTicketBuilder(TicketBuilder):
-    """
-    Concrete Builder for Bus ticket.
-    """
+    """Concrete Builder for Bus ticket."""
 
     def add_header(self, booking_doc, user_doc):
         booking_id = str(booking_doc.get("_id", ""))[-8:].upper()
-
-        self.product.ticket_id = f"BUS-{booking_id}"
-        self.product.title = "BUS E-TICKET"
-        self.product.subtitle = "36 Seat Bus Ticket Confirmation"
+        self.product.ticket_id      = f"BUS-{booking_id}"
+        self.product.title          = "BUS E-TICKET"
+        self.product.subtitle       = "36 Seat Bus Ticket Confirmation"
         self.product.transport_type = "Bus"
-        self.product.icon = "fa-bus"
+        self.product.icon           = "fa-bus"
 
     def add_transport_specific_info(self, booking_doc, user_doc):
         self.product.add_section("Bus Details", {
-            "Bus Operator": booking_doc.get("operator", "N/A"),
-            "Seat Layout": "36 seats, 2 × 2 layout",
+            "Bus Operator":   booking_doc.get("operator", "N/A"),
+            "Seat Layout":    "36 seats, 2 × 2 layout",
             "Boarding Point": booking_doc.get("boarding_point", "Main Counter"),
             "Reporting Time": "30 minutes before departure",
         })
 
     def add_ticket_style(self):
-        self.product.theme = "bus"
+        self.product.theme       = "bus"
         self.product.footer_note = "Please arrive at the bus counter at least 30 minutes before departure."
 
 
 class TrainTicketBuilder(TicketBuilder):
-    """
-    Concrete Builder for Train ticket.
-    """
+    """Concrete Builder for Train ticket."""
 
     def add_header(self, booking_doc, user_doc):
         booking_id = str(booking_doc.get("_id", ""))[-8:].upper()
-
-        self.product.ticket_id = f"TRN-{booking_id}"
-        self.product.title = "TRAIN E-TICKET"
-        self.product.subtitle = "Six Bogie Train Ticket Confirmation"
+        self.product.ticket_id      = f"TRN-{booking_id}"
+        self.product.title          = "TRAIN E-TICKET"
+        self.product.subtitle       = "Six Bogie Train Ticket Confirmation"
         self.product.transport_type = "Train"
-        self.product.icon = "fa-train"
+        self.product.icon           = "fa-train"
 
     def add_transport_specific_info(self, booking_doc, user_doc):
-        seat_no = booking_doc.get("seat_no", "N/A")
-
+        seat_no    = booking_doc.get("seat_no", "N/A")
         bogie_name = "N/A"
+
         if isinstance(seat_no, str) and seat_no.startswith("B") and "-" in seat_no:
-            bogie_code = seat_no.split("-")[0]   # Example: B3
+            bogie_code = seat_no.split("-")[0]          # e.g. "B3"
             bogie_name = bogie_code.replace("B", "Bogie ")
 
         self.product.add_section("Train Details", {
-            "Train Name": booking_doc.get("operator", "N/A"),
+            "Train Name":     booking_doc.get("operator", "N/A"),
             "Selected Bogie": bogie_name,
-            "Total Bogies": "6 Bogies",
-            "Coach Type": booking_doc.get("seat_class", "N/A"),
+            "Total Bogies":   "6 Bogies",
+            "Coach Type":     booking_doc.get("seat_class", "N/A"),
             "ID Requirement": "Carry a valid ID card",
         })
 
     def add_ticket_style(self):
-        self.product.theme = "train"
+        self.product.theme       = "train"
         self.product.footer_note = "Carry a valid ID card during the train journey."
 
+
 class PlaneTicketBuilder(TicketBuilder):
-    """
-    Concrete Builder for Plane ticket.
-    """
+    """Concrete Builder for Plane ticket."""
 
     def add_header(self, booking_doc, user_doc):
         booking_id = str(booking_doc.get("_id", ""))[-8:].upper()
-
-        self.product.ticket_id = f"AIR-{booking_id}"
-        self.product.title = "PLANE E-TICKET"
-        self.product.subtitle = "Business / Economy Class Flight Ticket Confirmation"
+        self.product.ticket_id      = f"AIR-{booking_id}"
+        self.product.title          = "PLANE E-TICKET"
+        self.product.subtitle       = "Business / Economy Class Flight Ticket Confirmation"
         self.product.transport_type = "Plane"
-        self.product.icon = "fa-plane"
+        self.product.icon           = "fa-plane"
 
     def add_transport_specific_info(self, booking_doc, user_doc):
         self.product.add_section("Flight Details", {
-            "Airline": booking_doc.get("operator", "N/A"),
-            "Selected Class": booking_doc.get("seat_class", "N/A"),
+            "Airline":           booking_doc.get("operator", "N/A"),
+            "Selected Class":    booking_doc.get("seat_class", "N/A"),
             "Available Classes": "Business and Economy",
-            "Gate": booking_doc.get("gate_no", "Gate 1"),
-            "Check-in": "Closes 45 minutes before departure",
+            "Gate":              booking_doc.get("gate_no", "Gate 1"),
+            "Check-in":          "Closes 45 minutes before departure",
         })
 
     def add_ticket_style(self):
-        self.product.theme = "plane"
+        self.product.theme       = "plane"
         self.product.footer_note = "Check-in closes 45 minutes before flight departure."
+
 
 class TicketDirector:
     """
     Director class.
-    It controls the order of ticket construction.
+    Controls the order of ticket construction steps.
     """
 
     def __init__(self):
@@ -236,7 +233,7 @@ class TicketDirector:
 
 def get_ticket_builder(transport_type: str):
     builders = {
-        "bus": BusTicketBuilder,
+        "bus":   BusTicketBuilder,
         "train": TrainTicketBuilder,
         "plane": PlaneTicketBuilder,
     }

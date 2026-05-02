@@ -4,21 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>BD Ticket — E-Ticket</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="/static/seat_ticket.css">
-</head>
+<style>
+.fake-qr{ display:none !important; }
 
+.qr-wrapper{
+  width:164px; height:164px;
+  margin:0 auto 12px;
+  border-radius:14px;
+  border:2px solid #e2e8f0;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  padding:6px;
+}
+.qr-wrapper canvas{
+  display:block !important;
+  border-radius:8px;
+}
+@media print{
+  nav,.ticket-actions{ display:none !important; }
+  body{ background:#fff !important; }
+  .page{ max-width:none; margin:0; padding:0; }
+  .ticket-card{ box-shadow:none !important; border-radius:0 !important; }
+  .qr-wrapper,.qr-wrapper canvas{
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
+}
+</style>
+</head>
 <body>
 <nav>
   <a href="/dashboard" class="logo">
-    <div class="logo-box">
-      <i class="fas fa-ticket-alt"></i>
-    </div>
+    <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
     <div class="logo-name">BD<span>Ticket</span></div>
   </a>
-
   <button class="nav-btn" onclick="logout()">Logout</button>
 </nav>
 
@@ -30,60 +55,363 @@
 </div>
 
 <script>
+/* ══════════════════════════════════════════════════════════════
+   SELF-CONTAINED QR CODE GENERATOR
+   Pure JS — no CDN, no external API, works fully offline/localhost
+   Based on the QR Code specification (ISO/IEC 18004)
+   ══════════════════════════════════════════════════════════════ */
+const QRMini = (function(){
+  /* --- Reed-Solomon GF(256) tables --- */
+  const EXP = new Uint8Array(512);
+  const LOG  = new Uint8Array(256);
+  (function(){
+    let x = 1;
+    for(let i=0;i<255;i++){
+      EXP[i]=x; LOG[x]=i;
+      x<<=1; if(x&256) x^=285;
+    }
+    for(let i=255;i<512;i++) EXP[i]=EXP[i-255];
+  })();
+
+  function gmul(a,b){ return a&&b ? EXP[LOG[a]+LOG[b]] : 0; }
+
+  function rsEncode(data, nec){
+    const gen = rsGenerator(nec);
+    const res = new Uint8Array(nec);
+    for(let i=0;i<data.length;i++){
+      const coef = data[i]^res[0];
+      for(let j=0;j<nec-1;j++) res[j]=res[j+1]^gmul(coef,gen[nec-1-j]);
+      res[nec-1]=gmul(coef,gen[0]);
+    }
+    return res;
+  }
+
+  function rsGenerator(n){
+    let g=[1];
+    for(let i=0;i<n;i++){
+      const ng=new Uint8Array(g.length+1);
+      for(let j=0;j<g.length;j++){
+        ng[j]^=g[j];
+        ng[j+1]^=gmul(g[j],EXP[i]);
+      }
+      g=ng;
+    }
+    return g;
+  }
+
+  /* --- Alphanumeric encoding --- */
+  const ALNUM='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+  function isAlnum(s){ return [...s].every(c=>ALNUM.includes(c)); }
+
+  /* --- Bit buffer --- */
+  function BitBuf(){
+    const b=[];
+    return {
+      push(val,len){ for(let i=len-1;i>=0;i--) b.push((val>>i)&1); },
+      get data(){ return b; },
+      get length(){ return b.length; }
+    };
+  }
+
+  /* --- Version 2-M QR (enough for ~30 chars alphanumeric) --- */
+  /* We'll auto-pick version 1-4 based on data length            */
+  /* Using M error correction throughout                          */
+
+  // (version, M ec) data codeword counts
+  const V_INFO = [
+    null,
+    {total:26,  data:16, ec:10, blocks:1, ecPerBlock:10},  // v1
+    {total:44,  data:28, ec:16, blocks:1, ecPerBlock:16},  // v2
+    {total:70,  data:44, ec:26, blocks:2, ecPerBlock:13},  // v3 -- 2 blocks of 13 EC each, 22 data each
+    {total:100, data:64, ec:36, blocks:2, ecPerBlock:18},  // v4
+  ];
+
+  function pickVersion(bitLen){
+    // alphanumeric capacity per version M
+    const caps=[0,20,38,61,90];
+    for(let v=1;v<=4;v++) if(caps[v]*11>=bitLen*11/11) return v; // rough
+    // more precise: use bit count
+    for(let v=1;v<=4;v++){
+      const info=V_INFO[v];
+      if(info.data*8 >= bitLen) return v;
+    }
+    return 4;
+  }
+
+  /* --- Format / alignment patterns --- */
+  function makeMatrix(ver){
+    const size=ver*4+17;
+    const m=Array.from({length:size},()=>new Int8Array(size).fill(-1));
+    function set(r,c,v){ m[r][c]=v; }
+    function finder(tr,tc){
+      for(let r=-1;r<=7;r++) for(let c=-1;c<=7;c++){
+        const v=(r>=0&&r<=6&&(c===0||c===6))||(c>=0&&c<=6&&(r===0||r===6))||(r>=2&&r<=4&&c>=2&&c<=4)?1:0;
+        if(tr+r>=0&&tr+r<size&&tc+c>=0&&tc+c<size) set(tr+r,tc+c,v);
+      }
+    }
+    finder(0,0); finder(0,size-7); finder(size-7,0);
+    // timing
+    for(let i=8;i<size-8;i++){ set(6,i,i%2===0?1:0); set(i,6,i%2===0?1:0); }
+    // dark module
+    set(size-8,8,1);
+    // alignment (ver>=2)
+    if(ver>=2){
+      const pos=ver===2?[6,18]:ver===3?[6,22]:ver===4?[6,26]:[];
+      for(const r of pos) for(const c of pos){
+        if(m[r][c]!==-1) continue;
+        for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++)
+          set(r+dr,c+dc,(Math.abs(dr)===2||Math.abs(dc)===2)?1:(dr===0&&dc===0)?1:0);
+      }
+    }
+    return m;
+  }
+
+  function reserveFormat(m){
+    const size=m.length;
+    const fp=[...Array(9).keys()].flatMap(i=>[[8,i],[i,8]]);
+    fp.push(...[[8,size-8],[8,size-7],[8,size-6],[8,size-5],[8,size-4],[8,size-3],[8,size-2],[8,size-1]]);
+    fp.push(...[[size-7,8],[size-6,8],[size-5,8],[size-4,8],[size-3,8],[size-2,8],[size-1,8]]);
+    for(const [r,c] of fp) if(m[r][c]===-1) m[r][c]=-2; // reserved
+  }
+
+  function placeData(m, bits){
+    const size=m.length;
+    let bi=0;
+    let up=true;
+    for(let col=size-1;col>=0;col-=2){
+      if(col===6) col=5;
+      for(let i=0;i<size;i++){
+        const row=up?size-1-i:i;
+        for(const dc of[0,-1]){
+          const c=col+dc;
+          if(m[row][c]===-1){
+            m[row][c]=bi<bits.length?bits[bi++]:0;
+          }
+        }
+      }
+      up=!up;
+    }
+  }
+
+  // Format string for mask 0 (101010000010010), M level = 00
+  // EC level M = bits 10, mask pattern 000
+  // Format info = EC<<3|mask, BCH protected, XOR 101010000010010
+  const FORMAT_BITS=[
+    [1,1,1,0,1,1,1,1,1,0,0,0,1,0,0],  // mask 0  M level
+    [1,1,1,0,0,1,0,1,1,1,1,0,0,1,1],
+    [1,1,1,1,1,0,1,1,0,1,0,1,0,1,0],
+    [1,1,1,1,0,0,0,1,0,0,1,1,1,0,0],
+    [1,1,0,0,1,1,0,0,0,1,0,1,1,1,1],
+    [1,1,0,0,0,1,1,0,0,0,1,1,0,0,1],
+    [1,1,0,1,1,0,0,0,1,0,0,0,0,0,0],
+    [1,1,0,1,0,0,1,0,1,1,1,0,1,1,0],
+  ];
+
+  function writeFormat(m, maskId){
+    const size=m.length;
+    const fb=FORMAT_BITS[maskId];
+    const pos1=[[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    const pos2=[[size-1,8],[size-2,8],[size-3,8],[size-4,8],[size-5,8],[size-6,8],[size-7,8],[8,size-8],[8,size-7],[8,size-6],[8,size-5],[8,size-4],[8,size-3],[8,size-2],[8,size-1]];
+    for(let i=0;i<15;i++){
+      const v=fb[i];
+      const [r1,c1]=pos1[i]; m[r1][c1]=v;
+      const [r2,c2]=pos2[i]; m[r2][c2]=v;
+    }
+  }
+
+  const MASKS=[
+    (r,c)=>(r+c)%2===0,
+    (r,_)=>r%2===0,
+    (_,c)=>c%3===0,
+    (r,c)=>(r+c)%3===0,
+    (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
+    (r,c)=>(r*c)%2+(r*c)%3===0,
+    (r,c)=>((r*c)%2+(r*c)%3)%2===0,
+    (r,c)=>((r+c)%2+(r*c)%3)%2===0,
+  ];
+
+  function applyMask(m, maskId){
+    const fn=MASKS[maskId];
+    for(let r=0;r<m.length;r++)
+      for(let c=0;c<m.length;c++)
+        if(m[r][c]===0||m[r][c]===1) m[r][c]^=(fn(r,c)?1:0);
+  }
+
+  function penalty(m){
+    const size=m.length; let p=0;
+    // Rule 1 & 2
+    for(let r=0;r<size;r++){
+      let run=1;
+      for(let c=1;c<size;c++){
+        if(m[r][c]===m[r][c-1]) run++; else{ if(run>=5)p+=run-2; run=1; }
+      }
+      if(run>=5)p+=run-2;
+    }
+    for(let c=0;c<size;c++){
+      let run=1;
+      for(let r=1;r<size;r++){
+        if(m[r][c]===m[r-1][c]) run++; else{ if(run>=5)p+=run-2; run=1; }
+      }
+      if(run>=5)p+=run-2;
+    }
+    // Rule 2
+    for(let r=0;r<size-1;r++)
+      for(let c=0;c<size-1;c++)
+        if(m[r][c]===m[r+1][c]&&m[r][c]===m[r][c+1]&&m[r][c]===m[r+1][c+1]) p+=3;
+    return p;
+  }
+
+  function encode(text){
+    // Uppercase for alphanumeric
+    const s = text.toUpperCase();
+    const buf = BitBuf();
+
+    let useAlnum = isAlnum(s);
+    let dataBuf;
+
+    if(useAlnum){
+      buf.push(0b0010, 4); // mode: alphanumeric
+      buf.push(s.length, 9); // char count (version 1-2 uses 9 bits)
+      for(let i=0;i<s.length-1;i+=2){
+        const v=ALNUM.indexOf(s[i])*45+ALNUM.indexOf(s[i+1]);
+        buf.push(v,11);
+      }
+      if(s.length%2) buf.push(ALNUM.indexOf(s[s.length-1]),6);
+    } else {
+      // Byte mode (UTF-8)
+      const bytes=[...new TextEncoder().encode(text)];
+      buf.push(0b0100,4);
+      buf.push(bytes.length,8);
+      for(const b of bytes) buf.push(b,8);
+    }
+
+    // terminator
+    buf.push(0,4);
+
+    const ver = pickVersion(buf.length);
+    const info = V_INFO[ver];
+    const totalBits = info.data * 8;
+    const bits = buf.data;
+
+    // pad to byte boundary
+    while(bits.length % 8 !== 0) bits.push(0);
+
+    // pad codewords
+    const padWords=[0b11101100,0b00010001];
+    let pi=0;
+    while(bits.length < totalBits){ for(let b=7;b>=0;b--) bits.push((padWords[pi%2]>>b)&1); pi++; }
+
+    // convert bits to bytes
+    const dataBytes=[];
+    for(let i=0;i<info.data;i++){
+      let byte=0;
+      for(let b=0;b<8;b++) byte=(byte<<1)|bits[i*8+b];
+      dataBytes.push(byte);
+    }
+
+    // split into blocks and compute EC
+    const blockSize = Math.floor(info.data / info.blocks);
+    const blocks=[], ecBlocks=[];
+    for(let i=0;i<info.blocks;i++){
+      const start=i*blockSize;
+      const block=dataBytes.slice(start, start+blockSize);
+      blocks.push(block);
+      ecBlocks.push(rsEncode(block, info.ecPerBlock));
+    }
+
+    // interleave
+    const finalBytes=[];
+    const maxLen=Math.max(...blocks.map(b=>b.length));
+    for(let i=0;i<maxLen;i++) for(const b of blocks) if(i<b.length) finalBytes.push(b[i]);
+    const maxEc=Math.max(...ecBlocks.map(b=>b.length));
+    for(let i=0;i<maxEc;i++) for(const b of ecBlocks) if(i<b.length) finalBytes.push(b[i]);
+
+    // to bits
+    const finalBits=[];
+    for(const byte of finalBytes) for(let b=7;b>=0;b--) finalBits.push((byte>>b)&1);
+    // remainder bits
+    const rem=[0,7,7,7,7];
+    for(let i=0;i<rem[ver];i++) finalBits.push(0);
+
+    // build matrix
+    const mat = makeMatrix(ver);
+    reserveFormat(mat);
+    placeData(mat, finalBits);
+
+    // pick best mask
+    let bestMask=0, bestPen=Infinity;
+    for(let mi=0;mi<8;mi++){
+      const tmp=mat.map(r=>Int8Array.from(r));
+      applyMask(tmp,mi);
+      writeFormat(tmp,mi);
+      const p=penalty(tmp);
+      if(p<bestPen){ bestPen=p; bestMask=mi; }
+    }
+    applyMask(mat, bestMask);
+    writeFormat(mat, bestMask);
+
+    return mat;
+  }
+
+  function draw(canvas, text, size=152){
+    const mat = encode(text);
+    const n = mat.length;
+    const scale = Math.floor(size / (n + 8));
+    const margin = Math.floor((size - scale * n) / 2);
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#0f172a';
+    for(let r=0;r<n;r++)
+      for(let c=0;c<n;c++)
+        if(mat[r][c]===1)
+          ctx.fillRect(margin+c*scale, margin+r*scale, scale, scale);
+  }
+
+  return { draw };
+})();
+
+/* ════════════════════════════════════════════════
+   APP
+   ════════════════════════════════════════════════ */
 const API = "http://127.0.0.1:5000";
 
-function getToken() {
-  return localStorage.getItem("token") || "";
+function getToken(){ return localStorage.getItem("token") || ""; }
+function logout(){ localStorage.clear(); window.location="/"; }
+
+function escapeHtml(v){
+  return String(v??"")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
-function logout() {
-  localStorage.clear();
-  window.location = "/";
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function sectionHtml(section) {
-  const rows = Object.entries(section.rows || {}).map(([key, value]) => `
+function sectionHtml(section){
+  const rows=Object.entries(section.rows||{}).map(([k,v])=>`
     <div class="ticket-row">
-      <span>${escapeHtml(key)}</span>
-      <strong>${escapeHtml(value)}</strong>
-    </div>
-  `).join("");
-
-  return `
-    <div class="ticket-section">
-      <h2>${escapeHtml(section.title)}</h2>
-      <div class="ticket-rows">${rows}</div>
-    </div>
-  `;
+      <span>${escapeHtml(k)}</span>
+      <strong>${escapeHtml(v)}</strong>
+    </div>`).join("");
+  return `<div class="ticket-section">
+    <h2>${escapeHtml(section.title)}</h2>
+    <div class="ticket-rows">${rows}</div>
+  </div>`;
 }
 
-function renderTicket(ticket) {
-  document.body.className = ticket.theme || "";
-
-  document.getElementById("ticketRoot").className = "";
-
-  document.getElementById("ticketRoot").innerHTML = `
+function renderTicket(ticket){
+  document.body.className = ticket.theme||"";
+  document.getElementById("ticketRoot").className="";
+  document.getElementById("ticketRoot").innerHTML=`
     <div class="ticket-card">
       <div class="ticket-top">
         <div class="ticket-title-area">
-          <div class="ticket-icon">
-            <i class="fas ${escapeHtml(ticket.icon)}"></i>
-          </div>
+          <div class="ticket-icon"><i class="fas ${escapeHtml(ticket.icon)}"></i></div>
           <div>
             <h1>${escapeHtml(ticket.title)}</h1>
             <p>${escapeHtml(ticket.subtitle)}</p>
           </div>
         </div>
-
         <div class="ticket-id-box">
           <span>Ticket ID</span>
           <strong>${escapeHtml(ticket.ticket_id)}</strong>
@@ -97,11 +425,12 @@ function renderTicket(ticket) {
 
       <div class="ticket-body">
         <div class="ticket-info">
-          ${(ticket.sections || []).map(sectionHtml).join("")}
+          ${(ticket.sections||[]).map(sectionHtml).join("")}
         </div>
-
         <div class="ticket-code-side">
-          <div class="fake-qr"></div>
+          <div class="qr-wrapper">
+            <canvas id="qrCanvas"></canvas>
+          </div>
           <span>Ticket Code</span>
           <strong>${escapeHtml(ticket.ticket_code)}</strong>
           <small>Issued: ${escapeHtml(ticket.issue_time)}</small>
@@ -115,54 +444,58 @@ function renderTicket(ticket) {
 
     <div class="ticket-actions">
       <button onclick="window.print()" class="primary-action">
-        Print / Save as PDF
+        <i class="fas fa-print"></i> Print / Save as PDF
       </button>
-
       <button onclick="window.location='/dashboard'" class="secondary-action">
         Back to Dashboard
       </button>
-    </div>
-  `;
-}
+    </div>`;
 
-async function loadTicket() {
-  if (!getToken()) {
-    window.location = "/";
-    return;
-  }
-
-  const bookingId = new URLSearchParams(window.location.search).get("id");
-
-  if (!bookingId) {
-    document.getElementById("ticketRoot").className = "error-card";
-    document.getElementById("ticketRoot").innerHTML = "Missing booking ID.";
-    return;
-  }
+  // Draw QR onto canvas — runs purely in-browser, no network call
+  const qrText = [
+    "BDTICKET",
+    ticket.ticket_id   || "",
+    ticket.ticket_code || "",
+    ticket.route_line  || "",
+    ticket.status      || "CONFIRMED"
+  ].join(" | ");
 
   try {
-    const response = await fetch(`${API}/ticket-data/${bookingId}`, {
-      headers: {
-        "Authorization": "Bearer " + getToken()
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      document.getElementById("ticketRoot").className = "error-card";
-      document.getElementById("ticketRoot").innerHTML = data.message || "Could not load ticket.";
-      return;
-    }
-
-    renderTicket(data.ticket_view);
-
-  } catch (error) {
-    document.getElementById("ticketRoot").className = "error-card";
-    document.getElementById("ticketRoot").innerHTML = "Server error. Please check Flask server.";
+    const canvas = document.getElementById("qrCanvas");
+    QRMini.draw(canvas, qrText, 152);
+  } catch(e){
+    console.error("QR draw failed:", e);
+    document.querySelector(".qr-wrapper").innerHTML=
+      `<div style="padding:12px;font-size:12px;color:#64748b;text-align:center;">
+         ${escapeHtml(ticket.ticket_code)}
+       </div>`;
   }
 }
 
-window.onload = loadTicket;
+async function loadTicket(){
+  if(!getToken()){ window.location="/"; return; }
+  const id=new URLSearchParams(window.location.search).get("id");
+  if(!id){
+    document.getElementById("ticketRoot").className="error-card";
+    document.getElementById("ticketRoot").innerHTML="Missing booking ID.";
+    return;
+  }
+  try{
+    const res  = await fetch(`${API}/ticket-data/${id}`,{headers:{"Authorization":"Bearer "+getToken()}});
+    const data = await res.json();
+    if(!res.ok){
+      document.getElementById("ticketRoot").className="error-card";
+      document.getElementById("ticketRoot").innerHTML=data.message||"Could not load ticket.";
+      return;
+    }
+    renderTicket(data.ticket_view);
+  }catch(e){
+    document.getElementById("ticketRoot").className="error-card";
+    document.getElementById("ticketRoot").innerHTML="Server error. Please check Flask server.";
+  }
+}
+
+window.onload=loadTicket;
 </script>
 </body>
 </html>

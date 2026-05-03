@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BDTicket — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN: Dark luxury / Command-center aesthetic
+   Deep navy + electric green accents
+   ══════════════════════════════════════════════ */
+:root{
+  --bg:       #080c14;
+  --surface:  #0d1526;
+  --card:     #111d35;
+  --border:   #1e3057;
+  --accent:   #00e5a0;
+  --accent2:  #3b82f6;
+  --accent3:  #f59e0b;
+  --danger:   #ef4444;
+  --txt:      #e2e8f0;
+  --sub:      #64748b;
+  --muted:    #1e3057;
+  --font:     'Space Grotesk', sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+body{
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── Sidebar ── */
+.sidebar{
+  width: 260px;
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+}
+
+.sidebar-logo{
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-mark{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.logo-icon{
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), #00b87a);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #080c14;
+}
+
+.logo-text{
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--txt);
+  letter-spacing: -.3px;
+}
+
+.logo-text span{ color: var(--accent); }
+
+.admin-badge{
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,229,160,.1);
+  border: 1px solid rgba(0,229,160,.25);
+  color: var(--accent);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+
+.admin-badge::before{
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{ opacity:1; }
+  50%{ opacity:.3; }
+}
+
+.sidebar-nav{
+  padding: 20px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-label{
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--sub);
+  text-transform: uppercase;
+  padding: 12px 10px 6px;
+}
+
+.nav-item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .18s;
+  color: var(--sub);
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-item:hover{
+  background: rgba(255,255,255,.05);
+  color: var(--txt);
+}
+
+.nav-item.active{
+  background: rgba(0,229,160,.1);
+  color: var(--accent);
+  border: 1px solid rgba(0,229,160,.2);
+}
+
+.nav-item i{ width: 18px; text-align: center; font-size: 15px; }
+
+.sidebar-footer{
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.admin-user{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+}
+
+.avatar{
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.admin-user-info{ flex: 1; min-width: 0; }
+.admin-user-name{ font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-user-role{ font-size: 11px; color: var(--accent); font-weight: 600; }
+
+.logout-btn{
+  background: none;
+  border: none;
+  color: var(--sub);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color .15s;
+}
+.logout-btn:hover{ color: var(--danger); }
+
+/* ── Main ── */
+.main{
+  margin-left: 260px;
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar{
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-title{
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+}
+
+.topbar-title span{ color: var(--accent); }
+
+.topbar-right{ display: flex; align-items: center; gap: 12px; }
+
+.live-badge{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,229,160,.08);
+  border: 1px solid rgba(0,229,160,.2);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.live-dot{
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.5s infinite;
+}
+
+.content{ padding: 28px 32px; flex: 1; }
+
+/* ── Section visibility ── */
+.section{ display: none; }
+.section.active{ display: block; }
+
+/* ── Stat Cards ── */
+.stats-grid{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+
+.stat-card:hover{ transform: translateY(-2px); border-color: var(--accent); }
+
+.stat-card::before{
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 80px; height: 80px;
+  border-radius: 0 0 0 80px;
+  opacity: .06;
+}
+
+.stat-card.green::before{ background: var(--accent); }
+.stat-card.blue::before{ background: var(--accent2); }
+.stat-card.amber::before{ background: var(--accent3); }
+.stat-card.red::before{ background: var(--danger); }
+
+.stat-icon{
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+
+.stat-card.green .stat-icon{ background: rgba(0,229,160,.12); color: var(--accent); }
+.stat-card.blue  .stat-icon{ background: rgba(59,130,246,.12); color: var(--accent2); }
+.stat-card.amber .stat-icon{ background: rgba(245,158,11,.12); color: var(--accent3); }
+.stat-card.red   .stat-icon{ background: rgba(239,68,68,.12); color: var(--danger); }
+
+.stat-value{
+  font-size: 30px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label{
+  font-size: 13px;
+  color: var(--sub);
+  font-weight: 500;
+}
+
+/* ── Charts Row ── */
+.charts-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.chart-card.wide{ grid-column: span 2; }
+
+.chart-title{
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chart-title span{ color: var(--sub); font-size: 12px; font-weight: 500; }
+
+/* Bar chart */
+.bar-chart{
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 120px;
+}
+
+.bar-col{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar{
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--accent), rgba(0,229,160,.3));
+  min-height: 4px;
+  transition: height .5s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.bar:hover{ filter: brightness(1.2); }
+
+.bar-label{
+  font-size: 9px;
+  color: var(--sub);
+  text-align: center;
+  font-family: var(--mono);
+}
+
+/* Donut */
+.donut-wrap{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.donut-item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.donut-dot{
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.donut-name{ font-size: 13px; font-weight: 500; flex: 1; }
+.donut-val{ font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; }
+.donut-bar-bg{ height: 4px; border-radius: 4px; background: var(--muted); flex: 2; overflow: hidden; }
+.donut-bar-fill{ height: 100%; border-radius: 4px; transition: width .6s ease; }
+
+/* ── Table ── */
+.table-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.table-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.table-title{
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.table-controls{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-input{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--txt);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  width: 220px;
+  transition: border-color .2s;
+}
+
+.search-input:focus{ border-color: var(--accent); }
+.search-input::placeholder{ color: var(--sub); }
+
+.filter-select{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--txt);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.admin-table{ width: 100%; border-collapse: collapse; }
+
+.admin-table th{
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--sub);
+  background: rgba(255,255,255,.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table td{
+  padding: 14px 20px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(30,48,87,.5);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td{ border-bottom: none; }
+.admin-table tr:hover td{ background: rgba(255,255,255,.02); }
+
+/* Pills / badges */
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pill.confirmed{ background: rgba(0,229,160,.1); color: var(--accent); border: 1px solid rgba(0,229,160,.25); }
+.pill.cancelled{ background: rgba(239,68,68,.1); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
+.pill.bus{  background: rgba(0,229,160,.1); color: var(--accent); }
+.pill.train{ background: rgba(59,130,246,.1); color: var(--accent2); }
+.pill.plane{ background: rgba(245,158,11,.1); color: var(--accent3); }
+.pill.admin{ background: rgba(139,92,246,.1); color: #a78bfa; border: 1px solid rgba(139,92,246,.25); }
+
+/* Action buttons */
+.act-btn{
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  font-family: var(--font);
+}
+
+.act-btn.cancel{ background: rgba(245,158,11,.1); color: var(--accent3); }
+.act-btn.cancel:hover{ background: rgba(245,158,11,.2); }
+.act-btn.delete{ background: rgba(239,68,68,.1); color: var(--danger); }
+.act-btn.delete:hover{ background: rgba(239,68,68,.2); }
+
+/* Pagination */
+.pagination{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--sub);
+}
+
+.pg-btns{ display: flex; gap: 6px; }
+
+.pg-btn{
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--txt);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  transition: all .15s;
+}
+
+.pg-btn:hover{ border-color: var(--accent); color: var(--accent); }
+.pg-btn.active{ background: var(--accent); color: #080c14; border-color: var(--accent); font-weight: 700; }
+.pg-btn:disabled{ opacity: .4; cursor: not-allowed; }
+
+/* Broadcast */
+.broadcast-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.broadcast-card h3{
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.broadcast-card p{ font-size: 13px; color: var(--sub); margin-bottom: 16px; }
+
+.broadcast-input{
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--txt);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color .2s;
+}
+
+.broadcast-input:focus{ border-color: var(--accent); }
+
+.broadcast-btn{
+  margin-top: 12px;
+  background: linear-gradient(135deg, var(--accent), #00b87a);
+  color: #080c14;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: opacity .2s;
+}
+
+.broadcast-btn:hover{ opacity: .85; }
+
+/* Toast */
+.toast{
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: .25s;
+  z-index: 999;
+  max-width: 320px;
+}
+
+.toast.show{ opacity: 1; transform: translateY(0); }
+.toast.ok{ border-left: 4px solid var(--accent); }
+.toast.err{ border-left: 4px solid var(--danger); }
+
+/* Loading */
+.loading-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(8,12,20,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.spinner{
+  width: 48px; height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* Revenue chart */
+.rev-bars{
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 140px;
+  margin-top: 8px;
+}
+
+.rev-col{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.rev-bar{
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, var(--accent2), rgba(59,130,246,.2));
+  min-height: 4px;
+  transition: height .6s ease;
+}
+
+.rev-label{ font-size: 10px; color: var(--sub); text-align: center; }
+.rev-val{ font-size: 9px; color: var(--accent2); font-family: var(--mono); }
+
+/* Empty state */
+.empty-state{
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--sub);
+}
+
+.empty-state i{ font-size: 40px; margin-bottom: 14px; display: block; opacity: .3; }
+.empty-state p{ font-size: 14px; }
+
+/* Mono values in table */
+.mono{ font-family: var(--mono); font-size: 12px; }
+
+/* Scrollable table wrapper */
+.table-scroll{ overflow-x: auto; }
+
+/* Responsive */
+@media(max-width: 1100px){
+  .stats-grid{ grid-template-columns: repeat(2, 1fr); }
+  .charts-row{ grid-template-columns: 1fr; }
+  .chart-card.wide{ grid-column: span 1; }
+}
+
+@media(max-width: 768px){
+  .sidebar{ transform: translateX(-100%); }
+  .main{ margin-left: 0; }
+}
+</style>
+</head>
+
+<body>
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/dashboard" class="logo-mark">
+      <div class="logo-icon"><i class="fas fa-ticket-alt"></i></div>
+      <div class="logo-text">BD<span>Ticket</span></div>
+    </a>
+    <div class="admin-badge">ADMIN PANEL</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Overview</div>
+    <button class="nav-item active" onclick="showSection('dashboard')">
+      <i class="fas fa-chart-line"></i> Dashboard
+    </button>
+
+    <div class="nav-label">Management</div>
+    <button class="nav-item" onclick="showSection('users')">
+      <i class="fas fa-users"></i> Users
+    </button>
+    <button class="nav-item" onclick="showSection('bookings')">
+      <i class="fas fa-ticket-alt"></i> Bookings
+    </button>
+    <button class="nav-item" onclick="showSection('revenue')">
+      <i class="fas fa-chart-bar"></i> Revenue
+    </button>
+
+    <div class="nav-label">Tools</div>
+    <button class="nav-item" onclick="showSection('broadcast')">
+      <i class="fas fa-broadcast-tower"></i> Broadcast
+    </button>
+    <button class="nav-item" onclick="window.location='/dashboard'">
+      <i class="fas fa-home"></i> Main Site
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-user">
+      <div class="avatar" id="sidebarAvatar">A</div>
+      <div class="admin-user-info">
+        <div class="admin-user-name" id="sidebarName">Admin</div>
+        <div class="admin-user-role">Super Admin</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Admin <span>Command Center</span></div>
+    <div class="topbar-right">
+      <div class="live-badge">
+        <div class="live-dot"></div> Live
+      </div>
+      <div style="font-size:13px;color:var(--sub);" id="topbarTime"></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ DASHBOARD ════ -->
+    <div class="section active" id="section-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-value" id="statUsers">—</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+          <div class="stat-value" id="statBookings">—</div>
+          <div class="stat-label">Total Bookings</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon"><i class="fas fa-bangladeshi-taka-sign"></i></div>
+          <div class="stat-value" id="statRevenue">—</div>
+          <div class="stat-label">Total Revenue (৳)</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="fas fa-ban"></i></div>
+          <div class="stat-value" id="statCancelled">—</div>
+          <div class="stat-label">Cancelled</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <!-- 7-day bar chart -->
+        <div class="chart-card wide">
+          <div class="chart-title">
+            Bookings — Last 7 Days
+            <span id="totalWeek"></span>
+          </div>
+          <div class="bar-chart" id="barChart"></div>
+        </div>
+
+        <!-- Transport type breakdown -->
+        <div class="chart-card">
+          <div class="chart-title">By Transport</div>
+          <div class="donut-wrap" id="typeChart"></div>
+        </div>
+      </div>
+
+      <!-- Recent bookings -->
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Recent Bookings</div>
+        </div>
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Route</th>
+                <th>Type</th>
+                <th>Operator</th>
+                <th>Seat</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="recentBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ USERS ════ -->
+    <div class="section" id="section-users">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">All Users</div>
+          <div class="table-controls">
+            <input class="search-input" id="userSearch" type="text"
+              placeholder="🔍  Search name or email..."
+              oninput="debounce(loadUsers, 400)()">
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Bookings</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="userPagination"></div>
+      </div>
+    </div>
+
+    <!-- ════ BOOKINGS ════ -->
+    <div class="section" id="section-bookings">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">All Bookings</div>
+          <div class="table-controls">
+            <input class="search-input" id="bookSearch" type="text"
+              placeholder="🔍  Search route, operator..."
+              oninput="debounce(loadBookings, 400)()">
+            <select class="filter-select" id="bookTypeFilter" onchange="loadBookings()">
+              <option value="">All Types</option>
+              <option value="bus">Bus</option>
+              <option value="train">Train</option>
+              <option value="plane">Plane</option>
+            </select>
+            <select class="filter-select" id="bookStatusFilter" onchange="loadBookings()">
+              <option value="">All Status</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Route</th>
+                <th>Type</th>
+                <th>Seat</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="bookPagination"></div>
+      </div>
+    </div>
+
+    <!-- ════ REVENUE ════ -->
+    <div class="section" id="section-revenue">
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+          <div class="stat-value" id="revTotal">—</div>
+          <div class="stat-label">Total Revenue (৳)</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-value" id="revConfirmed">—</div>
+          <div class="stat-label">Confirmed Bookings</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon"><i class="fas fa-calculator"></i></div>
+          <div class="stat-value" id="revAvg">—</div>
+          <div class="stat-label">Avg. Ticket Price (৳)</div>
+        </div>
+      </div>
+
+      <div class="charts-row" style="grid-template-columns:2fr 1fr">
+        <div class="chart-card">
+          <div class="chart-title">Monthly Revenue (Last 6 Months)</div>
+          <div class="rev-bars" id="revBars"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Revenue by Transport</div>
+          <div class="donut-wrap" id="revByType"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ BROADCAST ════ -->
+    <div class="section" id="section-broadcast">
+      <div class="broadcast-card">
+        <h3><i class="fas fa-broadcast-tower" style="color:var(--accent);margin-right:8px"></i>Broadcast Notification</h3>
+        <p>Send a message to ALL registered users instantly.</p>
+        <textarea class="broadcast-input" id="broadcastMsg"
+          placeholder="Type your message here... e.g. 'System maintenance on May 10 from 2–4 AM. All bookings will remain unaffected.'"></textarea>
+        <br>
+        <button class="broadcast-btn" onclick="sendBroadcast()">
+          <i class="fas fa-paper-plane"></i> Send to All Users
+        </button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Admin Accounts</div>
+        </div>
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>zihadmuzahid2003@gmail.com</td>
+                <td><span class="pill admin"><i class="fas fa-crown"></i> Super Admin</span></td>
+                <td><span class="pill confirmed">Active</span></td>
+              </tr>
+              <tr>
+                <td>md.soheleleven05@gmail.com</td>
+                <td><span class="pill admin"><i class="fas fa-crown"></i> Super Admin</span></td>
+                <td><span class="pill confirmed">Active</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "http://127.0.0.1:5000";
+const token = localStorage.getItem("token");
+let bookPage = 1;
+
+/* ── Auth guard ── */
+if(!token){ window.location = "/"; }
+
+const headers = { "Content-Type":"application/json", "Authorization":"Bearer " + token };
+
+/* ── Topbar clock ── */
+function updateClock(){
+  document.getElementById("topbarTime").textContent =
+    new Date().toLocaleString("en-BD",{hour12:true,hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ── Toast ── */
+function showToast(msg, type="ok"){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.className = "toast", 3200);
+}
+
+/* ── Sidebar ── */
+function showSection(name){
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("section-"+name).classList.add("active");
+  event.currentTarget.classList.add("active");
+
+  if(name==="users")    loadUsers();
+  if(name==="bookings") loadBookings();
+  if(name==="revenue")  loadRevenue();
+}
+
+/* ── Debounce ── */
+function debounce(fn, delay){
+  let t;
+  return function(){ clearTimeout(t); t = setTimeout(fn, delay); };
+}
+
+/* ── Logout ── */
+function logout(){ localStorage.clear(); window.location = "/"; }
+
+/* ══════════════════════
+   DASHBOARD
+   ══════════════════════ */
+async function loadDashboard(){
+  try{
+    const res  = await fetch(API+"/admin/stats", {headers});
+    if(res.status===403){ showToast("Access denied. Admins only ❌","err"); document.getElementById("loadingOverlay").style.display="none"; return; }
+    const data = await res.json();
+
+    /* Stat cards */
+    document.getElementById("statUsers").textContent    = data.total_users.toLocaleString();
+    document.getElementById("statBookings").textContent = data.total_bookings.toLocaleString();
+    document.getElementById("statRevenue").textContent  = "৳"+data.total_revenue.toLocaleString();
+    document.getElementById("statCancelled").textContent= data.cancelled.toLocaleString();
+
+    /* User info in sidebar */
+    const name = localStorage.getItem("name") || "Admin";
+    document.getElementById("sidebarName").textContent = name;
+    document.getElementById("sidebarAvatar").textContent = name[0].toUpperCase();
+
+    /* Revenue cards for revenue section */
+    document.getElementById("revTotal").textContent     = "৳"+data.total_revenue.toLocaleString();
+    document.getElementById("revConfirmed").textContent = data.confirmed.toLocaleString();
+    const avg = data.confirmed>0 ? Math.round(data.total_revenue/data.confirmed) : 0;
+    document.getElementById("revAvg").textContent       = "৳"+avg.toLocaleString();
+
+    /* 7-day bar chart */
+    const maxCount = Math.max(1, ...data.last_7_days.map(d=>d.count));
+    const total7 = data.last_7_days.reduce((a,d)=>a+d.count,0);
+    document.getElementById("totalWeek").textContent = total7+" bookings this week";
+    const barChart = document.getElementById("barChart");
+    barChart.innerHTML = data.last_7_days.map(d=>`
+      <div class="bar-col">
+        <div class="bar" style="height:${Math.max(4,(d.count/maxCount)*100)}%" title="${d.count} bookings on ${d.date}"></div>
+        <div class="bar-label">${d.date.slice(5)}</div>
+      </div>`).join("");
+
+    /* Transport breakdown */
+    const colors = {Bus:"#00e5a0", Train:"#3b82f6", Plane:"#f59e0b", bus:"#00e5a0", train:"#3b82f6", plane:"#f59e0b"};
+    const maxType = Math.max(1, ...Object.values(data.by_type));
+    document.getElementById("typeChart").innerHTML =
+      Object.entries(data.by_type).map(([type,count])=>`
+        <div class="donut-item">
+          <div class="donut-dot" style="background:${colors[type]||"#64748b"}"></div>
+          <div class="donut-name">${type}</div>
+          <div class="donut-bar-bg"><div class="donut-bar-fill" style="width:${(count/maxType)*100}%;background:${colors[type]||"#64748b"}"></div></div>
+          <div class="donut-val">${count}</div>
+        </div>`).join("") || "<div style='color:var(--sub);font-size:13px'>No data yet</div>";
+
+    /* Recent bookings table */
+    document.getElementById("recentBody").innerHTML =
+      data.recent_bookings.map(b=>`
+        <tr>
+          <td class="mono">${b._id.slice(-8).toUpperCase()}</td>
+          <td>${b.ticket?.source||"?"} → ${b.ticket?.destination||"?"}</td>
+          <td>${typepill(b.ticket?.type)}</td>
+          <td>${b.operator||"—"}</td>
+          <td class="mono">${b.seat_no||"—"}</td>
+          <td class="mono">৳${(b.payment?.amount||0).toLocaleString()}</td>
+          <td>${statuspill(b.status)}</td>
+          <td style="color:var(--sub);font-size:12px">${(b.booked_at||"").slice(0,10)}</td>
+        </tr>`).join("") ||
+      `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>No bookings yet</p></div></td></tr>`;
+
+    document.getElementById("loadingOverlay").style.display = "none";
+  }catch(e){
+    showToast("Failed to load dashboard ❌","err");
+    document.getElementById("loadingOverlay").style.display = "none";
+  }
+}
+
+/* ══════════════════════
+   USERS
+   ══════════════════════ */
+async function loadUsers(){
+  const search = document.getElementById("userSearch").value.trim();
+  const url = API+"/admin/users"+(search?"?search="+encodeURIComponent(search):"");
+  try{
+    const res  = await fetch(url, {headers});
+    const data = await res.json();
+    if(!Array.isArray(data)){ showToast(data.message||"Error","err"); return; }
+
+    document.getElementById("usersBody").innerHTML =
+      data.map(u=>`
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0">
+                ${(u.name||"?")[0].toUpperCase()}
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13px">${u.name||"—"}</div>
+                <div style="font-size:11px;color:var(--sub)">ID: ${u._id.slice(-8)}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:13px">${u.email||"—"}</td>
+          <td class="mono">${u.phone||"—"}</td>
+          <td><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">${u.booking_count}</span></td>
+          <td>${u.is_admin?'<span class="pill admin"><i class="fas fa-crown"></i> Admin</span>':'<span style="color:var(--sub);font-size:12px">User</span>'}</td>
+          <td style="color:var(--sub);font-size:12px">${(u.created_at||"").slice(0,10)||"—"}</td>
+          <td>
+            ${u.is_admin?"<span style='color:var(--sub);font-size:12px'>Protected</span>":
+              `<button class="act-btn delete" onclick="deleteUser('${u._id}','${(u.name||"this user").replace(/'/g,"")}')" >
+                <i class="fas fa-trash"></i> Delete
+              </button>`}
+          </td>
+        </tr>`).join("") ||
+      `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><p>No users found</p></div></td></tr>`;
+
+    document.getElementById("userPagination").innerHTML =
+      `<span>Total: <strong>${data.length}</strong> users</span>`;
+
+  }catch(e){ showToast("Failed to load users ❌","err"); }
+}
+
+async function deleteUser(userId, name){
+  if(!confirm(`Delete user "${name}"?\nThis will also delete all their bookings. This cannot be undone.`)) return;
+  try{
+    const res  = await fetch(`${API}/admin/users/${userId}`, {method:"DELETE", headers});
+    const data = await res.json();
+    showToast(data.message, res.ok?"ok":"err");
+    if(res.ok) loadUsers();
+  }catch(e){ showToast("Error deleting user ❌","err"); }
+}
+
+/* ══════════════════════
+   BOOKINGS
+   ══════════════════════ */
+async function loadBookings(page=bookPage){
+  bookPage = page;
+  const search = document.getElementById("bookSearch").value.trim();
+  const type   = document.getElementById("bookTypeFilter").value;
+  const status = document.getElementById("bookStatusFilter").value;
+
+  let url = `${API}/admin/bookings?page=${page}&per_page=15`;
+  if(search) url += "&search="+encodeURIComponent(search);
+  if(type)   url += "&type="+type;
+  if(status) url += "&status="+status;
+
+  try{
+    const res  = await fetch(url, {headers});
+    const data = await res.json();
+    if(!data.bookings){ showToast(data.message||"Error","err"); return; }
+
+    document.getElementById("bookingsBody").innerHTML =
+      data.bookings.map(b=>`
+        <tr>
+          <td class="mono" style="font-size:11px">${b._id.slice(-8).toUpperCase()}</td>
+          <td style="font-size:13px">${b.ticket?.source||"?"} → ${b.ticket?.destination||"?"}</td>
+          <td>${typepill(b.ticket?.type)}</td>
+          <td class="mono" style="font-size:12px">${b.seat_no||"—"}</td>
+          <td class="mono">৳${(b.payment?.amount||0).toLocaleString()}</td>
+          <td style="font-size:12px;color:var(--sub)">${b.payment?.method||"—"}</td>
+          <td>${statuspill(b.status)}</td>
+          <td style="color:var(--sub);font-size:11px">${(b.booked_at||"").slice(0,10)}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            ${b.status!=="CANCELLED"?`<button class="act-btn cancel" onclick="cancelBooking('${b._id}')"><i class="fas fa-ban"></i> Cancel</button>`:""}
+            <button class="act-btn delete" onclick="deleteBooking('${b._id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`).join("") ||
+      `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-ticket-alt"></i><p>No bookings found</p></div></td></tr>`;
+
+    /* Pagination */
+    let pg = `<span>Showing page <strong>${data.page}</strong> of <strong>${data.pages}</strong> — ${data.total} total</span>`;
+    pg += `<div class="pg-btns">`;
+    pg += `<button class="pg-btn" onclick="loadBookings(${data.page-1})" ${data.page<=1?"disabled":""}>‹ Prev</button>`;
+    for(let i=Math.max(1,data.page-2);i<=Math.min(data.pages,data.page+2);i++)
+      pg += `<button class="pg-btn${i===data.page?" active":""}" onclick="loadBookings(${i})">${i}</button>`;
+    pg += `<button class="pg-btn" onclick="loadBookings(${data.page+1})" ${data.page>=data.pages?"disabled":""}>Next ›</button>`;
+    pg += `</div>`;
+    document.getElementById("bookPagination").innerHTML = pg;
+
+  }catch(e){ showToast("Failed to load bookings ❌","err"); }
+}
+
+async function cancelBooking(id){
+  if(!confirm("Cancel this booking?")) return;
+  try{
+    const res  = await fetch(`${API}/admin/bookings/${id}/cancel`, {method:"POST", headers});
+    const data = await res.json();
+    showToast(data.message, res.ok?"ok":"err");
+    if(res.ok) loadBookings();
+  }catch(e){ showToast("Error ❌","err"); }
+}
+
+async function deleteBooking(id){
+  if(!confirm("Permanently delete this booking?")) return;
+  try{
+    const res  = await fetch(`${API}/admin/bookings/${id}`, {method:"DELETE", headers});
+    const data = await res.json();
+    showToast(data.message, res.ok?"ok":"err");
+    if(res.ok) loadBookings();
+  }catch(e){ showToast("Error ❌","err"); }
+}
+
+/* ══════════════════════
+   REVENUE
+   ══════════════════════ */
+async function loadRevenue(){
+  try{
+    const res  = await fetch(API+"/admin/revenue", {headers});
+    const data = await res.json();
+
+    /* Monthly bar chart */
+    const maxRev = Math.max(1, ...data.monthly.map(m=>m.revenue));
+    document.getElementById("revBars").innerHTML =
+      data.monthly.map(m=>`
+        <div class="rev-col">
+          <div class="rev-val">৳${(m.revenue/1000).toFixed(0)}k</div>
+          <div class="rev-bar" style="height:${Math.max(4,(m.revenue/maxRev)*100)}%" title="${m.count} bookings — ৳${m.revenue.toLocaleString()}"></div>
+          <div class="rev-label">${m.month}</div>
+        </div>`).join("");
+
+    /* By type */
+    const colors2 = {Bus:"#00e5a0",Train:"#3b82f6",Plane:"#f59e0b",bus:"#00e5a0",train:"#3b82f6",plane:"#f59e0b"};
+    const maxRevType = Math.max(1, ...data.by_type.map(t=>t.revenue));
+    document.getElementById("revByType").innerHTML =
+      data.by_type.map(t=>`
+        <div class="donut-item">
+          <div class="donut-dot" style="background:${colors2[t.type]||"#64748b"}"></div>
+          <div class="donut-name">${t.type}</div>
+          <div class="donut-bar-bg"><div class="donut-bar-fill" style="width:${(t.revenue/maxRevType)*100}%;background:${colors2[t.type]||"#64748b"}"></div></div>
+          <div class="donut-val">৳${(t.revenue/1000).toFixed(0)}k</div>
+        </div>`).join("") || "<div style='color:var(--sub);font-size:13px'>No revenue yet</div>";
+
+  }catch(e){ showToast("Failed to load revenue ❌","err"); }
+}
+
+/* ══════════════════════
+   BROADCAST
+   ══════════════════════ */
+async function sendBroadcast(){
+  const msg = document.getElementById("broadcastMsg").value.trim();
+  if(!msg){ showToast("Please type a message first ❌","err"); return; }
+  if(!confirm(`Send this message to ALL users?\n\n"${msg}"`)) return;
+  try{
+    const res  = await fetch(API+"/admin/broadcast",{method:"POST",headers,body:JSON.stringify({message:msg})});
+    const data = await res.json();
+    showToast(data.message, res.ok?"ok":"err");
+    if(res.ok) document.getElementById("broadcastMsg").value="";
+  }catch(e){ showToast("Error ❌","err"); }
+}
+
+/* ── Helpers ── */
+function typepill(t){
+  const icons={"bus":"fa-bus","train":"fa-train","plane":"fa-plane","Bus":"fa-bus","Train":"fa-train","Plane":"fa-plane"};
+  const cls  ={"bus":"bus","train":"train","plane":"plane","Bus":"bus","Train":"train","Plane":"plane"};
+  return `<span class="pill ${cls[t]||""}"><i class="fas ${icons[t]||"fa-ticket-alt"}"></i> ${t||"—"}</span>`;
+}
+
+function statuspill(s){
+  return s==="CONFIRMED"
+    ? `<span class="pill confirmed"><i class="fas fa-check-circle"></i> Confirmed</span>`
+    : `<span class="pill cancelled"><i class="fas fa-times-circle"></i> ${s||"Unknown"}</span>`;
+}
+
+/* ── Init ── */
+window.onload = loadDashboard;
+</script>
+</body>
+</html>

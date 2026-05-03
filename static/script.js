@@ -4,6 +4,12 @@
 
 const API = "http://127.0.0.1:5000";
 
+/* ── Admin emails (must match admin_routes.py) ────────────── */
+const ADMIN_EMAILS = [
+  "zihadmuzahid2003@gmail.com",
+  "md.soheleleven05@gmail.com"
+];
+
 /* ── helpers ──────────────────────────────────────────────── */
 function getToken() { return localStorage.getItem("token") || ""; }
 
@@ -36,7 +42,15 @@ function login() {
   const password = (document.getElementById("password")?.value || "").trim();
 
   if (!email || !password) {
-    showAlert("loginAlert", "Please fill in all fields", "err"); return;
+    showAlert("loginAlert", "Please fill in all fields", "err");
+    return;
+  }
+
+  // Disable button and show loading state
+  const btn = document.querySelector(".btn-login");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
   }
 
   fetch(API + "/login", {
@@ -47,17 +61,47 @@ function login() {
   .then(r => r.json())
   .then(d => {
     if (d.token) {
+      // Save everything to localStorage
       localStorage.setItem("token",   d.token);
       localStorage.setItem("user_id", d.user_id  || "");
       localStorage.setItem("name",    d.name     || "");
-      localStorage.setItem("email",   d.email    || "");
+      localStorage.setItem("email",   d.email    || email);
       localStorage.setItem("role",    d.role     || "user");
-      window.location = "/dashboard";
+
+      const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
+
+      if (isAdmin) {
+        // Show admin redirect message
+        showAlert(
+          "loginAlert",
+          `<i class="fas fa-crown" style="color:#f59e0b;margin-right:6px"></i>
+           Welcome Admin! Redirecting to Admin Panel...`,
+          "ok"
+        );
+        if (btn) btn.innerHTML = '<i class="fas fa-shield-alt"></i> Entering Admin Panel...';
+        setTimeout(() => { window.location = "/admin"; }, 1200);
+      } else {
+        showAlert("loginAlert", "Login successful! Redirecting...", "ok");
+        if (btn) btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+        setTimeout(() => { window.location = "/dashboard"; }, 800);
+      }
+
     } else {
       showAlert("loginAlert", d.message || "Login failed ❌", "err");
+      // Re-enable button on failure
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i>Login to Account';
+      }
     }
   })
-  .catch(() => showAlert("loginAlert", "Cannot reach server. Is Flask running?", "err"));
+  .catch(() => {
+    showAlert("loginAlert", "Cannot reach server. Is Flask running?", "err");
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i>Login to Account';
+    }
+  });
 }
 
 /* ── REGISTER – STEP 1: send OTP ─────────────────────────── */
@@ -83,10 +127,8 @@ function register() {
     const ok = d.message && (d.message.includes("sent") || d.message.includes("OTP"));
     showAlert("regAlert", d.message, ok ? "ok" : "err");
     if (ok) {
-      /* show OTP box + update step indicator */
       const ob = document.getElementById("otpBox");
       if (ob) ob.style.display = "block";
-      /* step dots (register.html) */
       const sd1 = document.getElementById("sd1");
       const sl1 = document.getElementById("sl1");
       const sd2 = document.getElementById("sd2");
@@ -138,7 +180,6 @@ function loadRoutes(type) {
     .then(data => {
       _routes = data.routes || [];
 
-      /* source dropdown */
       const srcSet = [...new Set(_routes.map(r => r.from))];
       const srcEl  = document.getElementById("source");
       if (srcEl) {
@@ -147,7 +188,6 @@ function loadRoutes(type) {
 
       updateDestinations();
 
-      /* operator dropdown */
       const opEl = document.getElementById("operator");
       if (opEl) {
         opEl.innerHTML = (data.operators || []).map(o => `<option value="${o}">${o}</option>`).join("");
@@ -198,14 +238,14 @@ function togglePaymentFields() {
 function book() {
   if (!getToken()) { alert("Please login first"); window.location = "/"; return; }
 
-  const srcEl    = document.getElementById("source");
-  const destEl   = document.getElementById("destination");
-  const opEl     = document.getElementById("operator");
+  const srcEl       = document.getElementById("source");
+  const destEl      = document.getElementById("destination");
+  const opEl        = document.getElementById("operator");
   const payMethodEl = document.getElementById("paymentMethod");
 
   if (!srcEl || !destEl) return;
 
-  const destVal   = (destEl.value || "").split("|");
+  const destVal     = (destEl.value || "").split("|");
   const source      = srcEl.value;
   const destination = destVal[0];
   const price       = destVal[1] || "0";
@@ -219,7 +259,6 @@ function book() {
   if (!destination) { showToast("Please select a destination ❌", "err"); return; }
   if (!operator)    { showToast("Please select an operator ❌",    "err"); return; }
 
-  // Get payment details based on method
   let payload = {
     source, destination, price, type, operator, payment_method: paymentMethod,
     journey_date: journeyDate, seat_no: seatNo, seat_class: seatClass
@@ -228,11 +267,11 @@ function book() {
   if (paymentMethod === "card") {
     payload.card_holder = document.getElementById("cardHolder")?.value || "";
     payload.card_number = document.getElementById("cardNumber")?.value || "";
-    payload.expiry = document.getElementById("expiry")?.value || "";
-    payload.cvv = document.getElementById("cvv")?.value || "";
+    payload.expiry      = document.getElementById("expiry")?.value || "";
+    payload.cvv         = document.getElementById("cvv")?.value || "";
   } else {
     payload.phone = document.getElementById("phone")?.value || "";
-    payload.pin = document.getElementById("pin")?.value || "";
+    payload.pin   = document.getElementById("pin")?.value || "";
   }
 
   fetch(API + "/book", {
@@ -257,9 +296,9 @@ function book() {
 function bookFromPage(type, routesArray) {
   if (!getToken()) { alert("Please login first"); window.location = "/"; return; }
 
-  const srcEl  = document.getElementById("source");
-  const destEl = document.getElementById("destination");
-  const opEl   = document.getElementById("operator");
+  const srcEl       = document.getElementById("source");
+  const destEl      = document.getElementById("destination");
+  const opEl        = document.getElementById("operator");
   const payMethodEl = document.getElementById("paymentMethod");
 
   if (!srcEl || !destEl) return;
@@ -285,11 +324,11 @@ function bookFromPage(type, routesArray) {
   if (paymentMethod === "card") {
     payload.card_holder = document.getElementById("cardHolder")?.value || "";
     payload.card_number = document.getElementById("cardNumber")?.value || "";
-    payload.expiry = document.getElementById("expiry")?.value || "";
-    payload.cvv = document.getElementById("cvv")?.value || "";
+    payload.expiry      = document.getElementById("expiry")?.value || "";
+    payload.cvv         = document.getElementById("cvv")?.value || "";
   } else {
     payload.phone = document.getElementById("phone")?.value || "";
-    payload.pin = document.getElementById("pin")?.value || "";
+    payload.pin   = document.getElementById("pin")?.value || "";
   }
 
   fetch(API + "/book", {
@@ -318,7 +357,7 @@ function loadBookings() {
   fetch(API + "/my-bookings", { headers: { "Authorization": "Bearer " + getToken() } })
     .then(r => { if (r.status === 401) { localStorage.clear(); window.location = "/"; } return r.json(); })
     .then(data => {
-      const total = data.length;
+      const total  = data.length;
       const buses  = data.filter(b => b.ticket?.type === "Bus").length;
       const trains = data.filter(b => b.ticket?.type === "Train").length;
       const planes = data.filter(b => b.ticket?.type === "Plane").length;
@@ -376,40 +415,27 @@ function loadBookings() {
 }
 
 /* ── NOTIFICATIONS ────────────────────────────────────────── */
-
-// Function to load notifications and update the bell badge
 function loadNotifications() {
   if (!getToken()) return;
 
   fetch(API + "/notifications", {
-    headers: {
-      "Authorization": "Bearer " + getToken()
-    }
+    headers: { "Authorization": "Bearer " + getToken() }
   })
   .then(res => {
-    if (res.status === 401) {
-      localStorage.clear();
-      window.location = "/";
-      return;
-    }
+    if (res.status === 401) { localStorage.clear(); window.location = "/"; return; }
     return res.json();
   })
   .then(data => {
     if (data && data.unread_count !== undefined) {
       updateNotificationBadge(data.unread_count);
-      console.log(`📬 Notifications: ${data.unread_count} unread out of ${data.notifications?.length || 0} total`);
     }
   })
-  .catch(err => {
-    console.error("Error loading notifications:", err);
-  });
+  .catch(err => console.error("Error loading notifications:", err));
 }
 
-// Update the notification bell badge on dashboard
 function updateNotificationBadge(count) {
   const badge = document.getElementById("notifBadge");
   if (!badge) return;
-  
   if (count > 0) {
     badge.style.display = "inline-block";
     badge.textContent = count > 99 ? "99+" : count;
@@ -418,17 +444,11 @@ function updateNotificationBadge(count) {
   }
 }
 
-// View notifications page
 function viewNotifications() {
-  if (!getToken()) {
-    alert("Please login first");
-    window.location = "/";
-    return;
-  }
+  if (!getToken()) { alert("Please login first"); window.location = "/"; return; }
   window.location = "/notifications-page";
 }
 
-// Mark a single notification as read (called from notifications page)
 function markNotificationAsRead(notificationId) {
   fetch(API + "/notifications/mark-read", {
     method: "POST",
@@ -436,29 +456,22 @@ function markNotificationAsRead(notificationId) {
     body: JSON.stringify({ notification_id: notificationId })
   })
   .then(res => res.json())
-  .then(data => {
-    console.log("Mark read response:", data);
-    loadNotifications(); // Update badge after marking read
-    if (window.location.pathname === "/notifications-page") {
-      location.reload();
-    }
+  .then(() => {
+    loadNotifications();
+    if (window.location.pathname === "/notifications-page") location.reload();
   })
   .catch(err => console.error("Error marking as read:", err));
 }
 
-// Mark all notifications as read
 function markAllNotificationsAsRead() {
   fetch(API + "/notifications/mark-all-read", {
     method: "POST",
     headers: authHeader()
   })
   .then(res => res.json())
-  .then(data => {
-    console.log("Mark all response:", data);
-    loadNotifications(); // Update badge
-    if (window.location.pathname === "/notifications-page") {
-      location.reload();
-    }
+  .then(() => {
+    loadNotifications();
+    if (window.location.pathname === "/notifications-page") location.reload();
   })
   .catch(err => console.error("Error marking all as read:", err));
 }
@@ -495,10 +508,10 @@ function verifyResetOTP() {
 }
 
 function resetPassword() {
-  const email    = (document.getElementById("resetEmail")?.value   || "").trim();
-  const otp      = (document.getElementById("resetOTP")?.value     || "").trim();
-  const newpass  = (document.getElementById("newpass")?.value      || "");
-  const confirm  = (document.getElementById("confirmpass")?.value  || "");
+  const email   = (document.getElementById("resetEmail")?.value   || "").trim();
+  const otp     = (document.getElementById("resetOTP")?.value     || "").trim();
+  const newpass = (document.getElementById("newpass")?.value      || "");
+  const confirm = (document.getElementById("confirmpass")?.value  || "");
 
   if (newpass !== confirm) { showAlert("resetAlert", "Passwords do not match ❌", "err"); return; }
   if (newpass.length < 6)  { showAlert("resetAlert", "Password must be 6+ characters", "err"); return; }
@@ -528,10 +541,9 @@ function updateResetStep(n) {
   });
 }
 
-/* ── INITIALIZE NOTIFICATIONS ON PAGE LOAD ────────────────── */
-// This will run when the page loads (only on dashboard)
+/* ── INIT: notifications on dashboard ─────────────────────── */
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     if (getToken() && window.location.pathname === "/dashboard") {
       loadNotifications();
       setInterval(loadNotifications, 30000);

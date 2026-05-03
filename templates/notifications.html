@@ -1,296 +1,255 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>My Notifications</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #f4f6f8;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .notification {
-            background: white;
-            border-left: 4px solid #4CAF50;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-        }
-        .notification.unread {
-            background: #e8f5e9;
-            border-left-color: #ff9800;
-        }
-        .notification.read {
-            opacity: 0.7;
-        }
-        .time {
-            color: #666;
-            font-size: 12px;
-        }
-        .ticket-details {
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        button {
-            background: #4facfe;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background: #3a8de0;
-        }
-        .mark-all {
-            background: #ff9800;
-        }
-        .mark-all:hover {
-            background: #e68900;
-        }
-        .unread-badge {
-            background: #ff9800;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .refresh-btn {
-            background: #28a745;
-        }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            color: #4facfe;
-            text-decoration: none;
-        }
-        .no-notifications {
-            text-align: center;
-            padding: 40px;
-            background: white;
-            border-radius: 10px;
-            color: #666;
-        }
-        .auto-refresh {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BD Ticket — Notifications</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--g:#16a34a;--gd:#14532d;--gl:#dcfce7;--nav:#0f172a;--bg:#f0f4f8;--white:#fff;--txt:#0f172a;--sub:#64748b;--bdr:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.28)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-box{width:38px;height:38px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
+.logo-name{font-family:'Syne',sans-serif;font-size:21px;font-weight:900;color:#fff;letter-spacing:-.5px}
+.logo-name span{color:var(--g)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.nav-user{color:rgba(255,255,255,.7);font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.07);padding:8px 14px;border-radius:8px}
+.nav-user i{color:var(--g)}
+.btn-logout{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;transition:.2s}
+.btn-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+
+.hero{background:linear-gradient(145deg,#0f172a 0%,#052e16 55%,#0f172a 100%);padding:40px 40px 50px;color:#fff;text-align:center}
+.hero h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:900;margin-bottom:10px}
+.hero h1 i{color:var(--g);margin-right:10px}
+.hero p{color:rgba(255,255,255,.6);font-size:14px}
+
+.container{max-width:900px;margin:0 auto;padding:30px 24px}
+.header-card{background:#fff;border-radius:20px;padding:24px 28px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;box-shadow:0 4px 20px rgba(0,0,0,.05)}
+.header-card h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:900}
+.unread-count{background:#ff9800;color:#fff;border-radius:50px;padding:6px 14px;font-size:14px;font-weight:800}
+.action-buttons{display:flex;gap:12px;flex-wrap:wrap}
+.action-btn{padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px;transition:.2s}
+.mark-all-btn{background:#ff9800;color:#fff}
+.mark-all-btn:hover{background:#e68900}
+.refresh-btn{background:#f1f5f9;color:var(--txt)}
+.refresh-btn:hover{background:#e2e8f0}
+.back-btn{background:#f1f5f9;color:var(--sub);text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;font-weight:700}
+.back-btn:hover{background:#e2e8f0;color:var(--txt)}
+
+.notifications-list{display:flex;flex-direction:column;gap:16px}
+.notification-card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05);transition:.2s;border-left:4px solid #4CAF50;position:relative}
+.notification-card.unread{background:#f0fdf4;border-left-color:#ff9800}
+.notification-card.read{opacity:0.75}
+.notification-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.notification-title{font-size:16px;font-weight:800;color:var(--txt)}
+.notification-title i{margin-right:8px;color:var(--g)}
+.notification-time{font-size:12px;color:var(--sub)}
+.notification-message{margin-bottom:15px;color:var(--txt);font-size:14px}
+.ticket-details{background:#f8fafc;border-radius:12px;padding:15px;margin-top:10px;font-size:13px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.ticket-detail-item{display:flex;align-items:center;gap:8px;color:var(--sub)}
+.ticket-detail-item i{width:20px;color:var(--g)}
+.mark-read-btn{background:var(--g);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;transition:.2s}
+.mark-read-btn:hover{background:var(--gd)}
+.already-read{font-size:12px;color:var(--sub);margin-top:10px}
+.empty-state{text-align:center;padding:60px 20px;background:#fff;border-radius:20px}
+.empty-state i{font-size:48px;color:#cbd5e1;margin-bottom:15px}
+.empty-state h3{font-size:18px;margin-bottom:8px}
+.empty-state p{color:var(--sub)}
+.auto-refresh{text-align:center;margin-top:24px;font-size:12px;color:var(--sub)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--nav);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;transform:translateY(80px);opacity:0;transition:.3s;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>📬 My Notifications</h2>
-            <div>
-                <span id="unreadBadge" class="unread-badge">0</span>
-            </div>
-        </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-            <button class="mark-all" onclick="markAllAsRead()">📌 Mark All as Read</button>
-            <button class="refresh-btn" onclick="loadNotifications()">🔄 Refresh</button>
-            <button onclick="window.location.href='/dashboard'">◀ Back to Dashboard</button>
-        </div>
+<nav>
+  <a href="/dashboard" class="logo">
+    <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
+    <div class="logo-name">BD<span>Ticket</span></div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-user"><i class="fas fa-user-circle"></i><span id="navName">User</span></div>
+    <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</button>
+  </div>
+</nav>
 
-        <div id="notificationsList">
-            <p style="text-align:center;">Loading notifications...</p>
-        </div>
-        
-        <div class="auto-refresh">
-            🔄 Auto-refreshes every 10 seconds
-        </div>
+<div class="hero">
+  <h1><i class="fas fa-bell"></i> My Notifications</h1>
+  <p>Stay updated with your booking status</p>
+</div>
+
+<div class="container">
+  <div class="header-card">
+    <h2>📬 All Notifications</h2>
+    <div class="action-buttons">
+      <button class="action-btn mark-all-btn" onclick="markAllAsRead()">
+        <i class="fas fa-check-double"></i> Mark All as Read
+      </button>
+      <button class="action-btn refresh-btn" onclick="loadNotifications()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
     </div>
+  </div>
 
-    <script>
-        // Get token from localStorage
-        const token = localStorage.getItem("token");
-        
-        // Redirect to login if no token
-        if (!token) {
-            alert("Please login first");
-            window.location = "/";
-        }
+  <div id="notificationsContainer">
+    <div class="empty-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <h3>Loading notifications...</h3>
+    </div>
+  </div>
 
-        // Function to load notifications from API
-        function loadNotifications() {
-            console.log("🔄 Loading notifications...");
-            
-            fetch("/notifications", {
-                headers: {
-                    "Authorization": "Bearer " + token
-                }
-            })
-            .then(res => {
-                if (res.status === 401) {
-                    alert("Session expired. Please login again.");
-                    window.location = "/";
-                    return;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (data && data.notifications !== undefined) {
-                    displayNotifications(data.notifications);
-                    updateUnreadCount(data.unread_count);
-                    console.log(`✅ Loaded ${data.notifications.length} notifications, ${data.unread_count} unread`);
-                }
-            })
-            .catch(err => {
-                console.error("Error loading notifications:", err);
-                document.getElementById("notificationsList").innerHTML = 
-                    '<div class="no-notifications">❌ Error loading notifications. Please refresh.</div>';
-            });
-        }
+  <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+  <div class="auto-refresh">
+    <i class="fas fa-clock"></i> Auto-refreshes every 10 seconds
+  </div>
+</div>
 
-        // Display notifications in the UI
-        function displayNotifications(notifications) {
-            const container = document.getElementById("notificationsList");
+<div class="toast" id="toast"></div>
 
-            if (!notifications || notifications.length === 0) {
-                container.innerHTML = `
-                    <div class="no-notifications">
-                        ✨ No notifications yet<br>
-                        <small>Book a ticket to see notifications here!</small>
-                    </div>
-                `;
-                return;
-            }
+<script>
+const API = "http://127.0.0.1:5000";
+const token = localStorage.getItem("token");
 
-            container.innerHTML = notifications.map(n => `
-                <div class="notification ${n.read ? 'read' : 'unread'}" id="notif-${n._id}">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                        <strong style="font-size:16px;">🎫 ${n.ticket_details?.type || 'Ticket'} Booking Confirmed!</strong>
-                        <span class="time">📅 ${n.timestamp || new Date(n.created_at).toLocaleString()}</span>
-                    </div>
-                    <p style="margin-top:10px;">${n.message || 'Booking confirmed successfully!'}</p>
-                    <div class="ticket-details">
-                        <strong>📋 Ticket Details:</strong><br>
-                        🚆 Type: ${n.ticket_details?.type || 'N/A'}<br>
-                        📍 From: ${n.ticket_details?.source || 'N/A'}<br>
-                        🎯 To: ${n.ticket_details?.destination || 'N/A'}<br>
-                        💰 Price: ৳${n.ticket_details?.price || 'N/A'}<br>
-                        💳 Payment: ${n.payment || 'N/A'}<br>
-                        🏢 Operator: ${n.operator || 'N/A'}
-                    </div>
-                    ${!n.read ? `<button onclick="markAsRead('${n._id}')" style="margin-top:10px;">✓ Mark as Read</button>` : 
-                                `<span style="color:#888; font-size:12px;">✓ Already read</span>`}
-                </div>
-            `).join('');
-        }
+if (!token) {
+    window.location = "/";
+}
 
-        // Update the unread count badge
-        function updateUnreadCount(count) {
-            const badge = document.getElementById("unreadBadge");
-            if (badge) {
-                badge.innerText = count;
-                // Change color based on count
-                if (count > 0) {
-                    badge.style.background = "#ff9800";
-                    badge.style.animation = "pulse 0.5s";
-                    setTimeout(() => { badge.style.animation = ""; }, 500);
-                } else {
-                    badge.style.background = "#4CAF50";
-                }
-            }
-            
-            // Update page title
-            if (count > 0) {
-                document.title = `(${count}) My Notifications`;
-            } else {
-                document.title = "My Notifications";
-            }
-        }
+function showToast(msg, type) {
+    const el = document.getElementById("toast");
+    el.innerHTML = `<i class="fas fa-${type === 'ok' ? 'check-circle' : 'exclamation-circle'}"></i> ${msg}`;
+    el.className = "toast show";
+    setTimeout(() => el.classList.remove("show"), 3000);
+}
 
-        // Mark a single notification as read
-        function markAsRead(notificationId) {
-            console.log("📌 Marking as read:", notificationId);
-            
-            fetch("/notifications/mark-read", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({notification_id: notificationId})
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Mark read response:", data);
-                loadNotifications(); // Reload to update UI
-            })
-            .catch(err => {
-                console.error("Error marking as read:", err);
-            });
-        }
-
-        // Mark all notifications as read
-        function markAllAsRead() {
-            console.log("📌 Marking all as read...");
-            
-            fetch("/notifications/mark-all-read", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({})
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Mark all response:", data);
-                alert(data.message);
-                loadNotifications(); // Reload to update UI
-            })
-            .catch(err => {
-                console.error("Error marking all as read:", err);
-            });
-        }
-
-        // Auto-refresh every 10 seconds
-        let refreshInterval = setInterval(() => {
-            loadNotifications();
-        }, 10000);
-
-        // Initial load
-        loadNotifications();
-
-        // Cleanup interval when page is closed
-        window.addEventListener("beforeunload", function() {
-            clearInterval(refreshInterval);
+async function loadNotifications() {
+    try {
+        const response = await fetch(API + "/notifications", {
+            headers: { "Authorization": "Bearer " + token }
         });
-
-        // Add CSS animation for pulse effect
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.2); }
-                100% { transform: scale(1); }
+        
+        if (response.status === 401) {
+            localStorage.clear();
+            window.location = "/";
+            return;
+        }
+        
+        const data = await response.json();
+        displayNotifications(data.notifications);
+        
+        // Auto-mark as read after viewing
+        if (data.notifications && data.notifications.length > 0) {
+            const unreadIds = data.notifications.filter(n => !n.read).map(n => n._id);
+            if (unreadIds.length > 0) {
+                // Mark as read after 10 seconds
+                setTimeout(() => {
+                    markAllAsRead();
+                }, 10000);
             }
+        }
+    } catch (err) {
+        console.error("Error:", err);
+        document.getElementById("notificationsContainer").innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Error loading notifications</h3>
+                <p>Please refresh the page</p>
+            </div>
         `;
-        document.head.appendChild(style);
-    </script>
+    }
+}
+
+function displayNotifications(notifications) {
+    const container = document.getElementById("notificationsContainer");
+    
+    if (!notifications || notifications.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <h3>No notifications yet</h3>
+                <p>Book a ticket to see notifications here!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = notifications.map(n => `
+        <div class="notification-card ${n.read ? 'read' : 'unread'}" id="notif-${n._id}">
+            <div class="notification-header">
+                <div class="notification-title">
+                    <i class="fas fa-ticket-alt"></i> ${n.ticket_type || 'Ticket'} Booking Confirmed
+                </div>
+                <div class="notification-time">
+                    <i class="far fa-clock"></i> ${n.timestamp || n.created_at}
+                </div>
+            </div>
+            <div class="notification-message">
+                ${n.message || 'Booking confirmed successfully!'}
+            </div>
+            <div class="ticket-details">
+                <div class="ticket-detail-item"><i class="fas fa-map-marker-alt"></i> From: ${n.source || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-map-pin"></i> To: ${n.destination || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-tag"></i> Price: ৳${n.price || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-credit-card"></i> Payment: ${n.payment || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-building"></i> Operator: ${n.operator || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-chair"></i> Seat: ${n.seat_no || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-calendar"></i> Date: ${n.journey_date || 'N/A'}</div>
+                <div class="ticket-detail-item"><i class="fas fa-clock"></i> Departure: ${n.departure_time || 'N/A'}</div>
+            </div>
+            ${!n.read ? `<button class="mark-read-btn" onclick="markAsRead('${n._id}')"><i class="fas fa-check"></i> Mark as Read</button>` : 
+                        `<div class="already-read"><i class="fas fa-check-circle"></i> Already read</div>`}
+        </div>
+    `).join('');
+}
+
+async function markAsRead(notificationId) {
+    try {
+        await fetch(API + "/notifications/mark-read", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ notification_id: notificationId })
+        });
+        loadNotifications();
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
+
+async function markAllAsRead() {
+    try {
+        const response = await fetch(API + "/notifications/mark-all-read", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            }
+        });
+        const data = await response.json();
+        showToast(data.message, "ok");
+        loadNotifications();
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
+
+function logout() {
+    localStorage.clear();
+    window.location = "/";
+}
+
+// Update nav name
+const userName = localStorage.getItem("name") || "User";
+document.getElementById("navName").textContent = userName;
+
+// Load notifications
+loadNotifications();
+// Auto-refresh every 10 seconds
+setInterval(loadNotifications, 10000);
+</script>
 </body>
 </html>

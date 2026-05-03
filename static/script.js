@@ -246,6 +246,7 @@ function book() {
     showToast(d.message, ok ? "ok" : "err");
     if (ok) {
       setTimeout(loadBookings, 900);
+      setTimeout(loadNotifications, 1000);
       if (d.redirect_url) setTimeout(() => window.location = d.redirect_url, 1500);
     }
   })
@@ -300,7 +301,10 @@ function bookFromPage(type, routesArray) {
   .then(d => {
     const ok = d.message && (d.message.includes("✅") || d.message.toLowerCase().includes("success"));
     showToast(d.message, ok ? "ok" : "err");
-    if (ok && d.redirect_url) setTimeout(() => window.location = d.redirect_url, 1500);
+    if (ok) {
+      setTimeout(loadNotifications, 1000);
+      if (d.redirect_url) setTimeout(() => window.location = d.redirect_url, 1500);
+    }
   })
   .catch(() => showToast("Server error ❌", "err"));
 }
@@ -371,6 +375,94 @@ function loadBookings() {
     });
 }
 
+/* ── NOTIFICATIONS ────────────────────────────────────────── */
+
+// Function to load notifications and update the bell badge
+function loadNotifications() {
+  if (!getToken()) return;
+
+  fetch(API + "/notifications", {
+    headers: {
+      "Authorization": "Bearer " + getToken()
+    }
+  })
+  .then(res => {
+    if (res.status === 401) {
+      localStorage.clear();
+      window.location = "/";
+      return;
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (data && data.unread_count !== undefined) {
+      updateNotificationBadge(data.unread_count);
+      console.log(`📬 Notifications: ${data.unread_count} unread out of ${data.notifications?.length || 0} total`);
+    }
+  })
+  .catch(err => {
+    console.error("Error loading notifications:", err);
+  });
+}
+
+// Update the notification bell badge on dashboard
+function updateNotificationBadge(count) {
+  const badge = document.getElementById("notifBadge");
+  if (!badge) return;
+  
+  if (count > 0) {
+    badge.style.display = "inline-block";
+    badge.textContent = count > 99 ? "99+" : count;
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+// View notifications page
+function viewNotifications() {
+  if (!getToken()) {
+    alert("Please login first");
+    window.location = "/";
+    return;
+  }
+  window.location = "/notifications-page";
+}
+
+// Mark a single notification as read (called from notifications page)
+function markNotificationAsRead(notificationId) {
+  fetch(API + "/notifications/mark-read", {
+    method: "POST",
+    headers: authHeader(),
+    body: JSON.stringify({ notification_id: notificationId })
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("Mark read response:", data);
+    loadNotifications(); // Update badge after marking read
+    if (window.location.pathname === "/notifications-page") {
+      location.reload();
+    }
+  })
+  .catch(err => console.error("Error marking as read:", err));
+}
+
+// Mark all notifications as read
+function markAllNotificationsAsRead() {
+  fetch(API + "/notifications/mark-all-read", {
+    method: "POST",
+    headers: authHeader()
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log("Mark all response:", data);
+    loadNotifications(); // Update badge
+    if (window.location.pathname === "/notifications-page") {
+      location.reload();
+    }
+  })
+  .catch(err => console.error("Error marking all as read:", err));
+}
+
 /* ── FORGOT PASSWORD ──────────────────────────────────────── */
 function sendResetOTP() {
   const email = (document.getElementById("resetEmail")?.value || "").trim();
@@ -434,4 +526,20 @@ function updateResetStep(n) {
     const ln = document.getElementById("pl" + i);
     if (ln) ln.className = "p-line " + (i < n ? "done" : "");
   });
+}
+
+/* ── INITIALIZE NOTIFICATIONS ON PAGE LOAD ────────────────── */
+// This will run when the page loads (only on dashboard)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", function() {
+    if (getToken() && window.location.pathname === "/dashboard") {
+      loadNotifications();
+      setInterval(loadNotifications, 30000);
+    }
+  });
+} else {
+  if (getToken() && window.location.pathname === "/dashboard") {
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+  }
 }

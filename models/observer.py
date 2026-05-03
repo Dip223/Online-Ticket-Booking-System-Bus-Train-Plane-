@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from models.email_sender import send_email
 from datetime import datetime
 from config import DB
 
@@ -11,75 +10,44 @@ class Observer(ABC):
         pass
 
 
-# ============= EMAIL OBSERVER =============
-class EmailNotificationObserver(Observer):
-    def update(self, booking_data):
-        """Send email notification to user after booking"""
-        try:
-            user_email = booking_data.get('user_email')
-            ticket = booking_data.get('ticket', {})
-            
-            if user_email:
-                subject = "🎉 Booking Confirmation - Online Ticket System"
-                body = f"""
-Hello {booking_data.get('user_name', 'User')},
-
-🎫 Your booking has been confirmed successfully!
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 BOOKING DETAILS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Booking ID: {booking_data.get('booking_id', 'N/A')}
-Ticket Type: {ticket.get('type', 'N/A')}
-From: {ticket.get('source', 'N/A')}
-To: {ticket.get('destination', 'N/A')}
-Price: {ticket.get('price', 'N/A')} BDT
-Payment Method: {booking_data.get('payment', 'N/A')}
-Operator: {booking_data.get('operator', 'N/A')}
-Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Thank you for choosing Online Ticket System!
-
-Best regards,
-Online Ticket System Team
-"""
-                send_email(user_email, subject, body)
-                print(f"✅ Email notification sent to {user_email}")
-                
-        except Exception as e:
-            print(f"❌ Email notification failed: {e}")
-
-
-# ============= WEBSITE OBSERVER =============
+# ============= WEBSITE NOTIFICATION OBSERVER ONLY (NO EMAIL) =============
 class WebsiteNotificationObserver(Observer):
     def update(self, booking_data):
         """Store notification in database for website display"""
         try:
             db = DB.get_db()
             
-            # Create notification document
+            ticket = booking_data.get('ticket', {})
+            
+            # Create a clear notification message
+            message = f"🎫 {ticket.get('type', 'Ticket')} booked from {ticket.get('source', 'N/A')} → {ticket.get('destination', 'N/A')}"
+            
+            # Create notification document with ALL details
             notification = {
                 "user_id": booking_data.get('user_id'),
                 "user_name": booking_data.get('user_name'),
                 "booking_id": booking_data.get('booking_id'),
-                "message": f"✅ Booking confirmed! {booking_data.get('ticket', {}).get('type', 'Ticket')} booked from {booking_data.get('ticket', {}).get('source', 'N/A')} → {booking_data.get('ticket', {}).get('destination', 'N/A')}",
-                "ticket_details": booking_data.get('ticket', {}),
-                "payment": booking_data.get('payment'),
-                "operator": booking_data.get('operator'),
+                "message": message,
+                "ticket_type": ticket.get('type', 'N/A'),
+                "source": ticket.get('source', 'N/A'),
+                "destination": ticket.get('destination', 'N/A'),
+                "price": ticket.get('price', 'N/A'),
+                "payment": booking_data.get('payment', 'N/A'),
+                "operator": booking_data.get('operator', 'N/A'),
+                "seat_no": booking_data.get('seat_no', 'N/A'),
+                "journey_date": booking_data.get('journey_date', 'N/A'),
+                "departure_time": booking_data.get('departure_time', 'N/A'),
                 "read": False,
-                "created_at": datetime.now(),
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "created_at": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now().strftime("%Y-%m-%d %I:%M %p")
             }
             
             # Insert into notifications collection
             result = db.notifications.insert_one(notification)
-            print(f"✅ Website notification stored for {booking_data.get('user_name')} (ID: {result.inserted_id})")
+            print(f"✅ Notification stored for {booking_data.get('user_name')} (ID: {result.inserted_id})")
             
         except Exception as e:
-            print(f"❌ Website notification failed: {e}")
+            print(f"❌ Notification failed: {e}")
 
 
 # ============= SUBJECT (OBSERVABLE) =============
@@ -98,6 +66,11 @@ class BookingSubject:
             print(f"❌ Detached: {observer.__class__.__name__}")
     
     def notify(self, booking_data):
-        print(f"\n📢 Notifying {len(self._observers)} observers...")
+        print(f"\n📢 Notifying {len(self._observers)} observer(s)...")
         for observer in self._observers:
             observer.update(booking_data)
+
+
+# Create singleton instance and attach website observer only
+booking_subject = BookingSubject()
+booking_subject.attach(WebsiteNotificationObserver())

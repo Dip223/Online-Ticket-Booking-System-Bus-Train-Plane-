@@ -9,6 +9,7 @@ from models.routes_data import (
 )
 from models.ticket_builder import TicketDirector, get_ticket_builder
 from models.payment_strategy import PaymentContext, PaymentStrategyFactory
+from models.observer import booking_subject  # ← IMPORT THE OBSERVER
 
 from routes.seat_routes import make_schedule_key, get_booked_seat_numbers
 
@@ -43,7 +44,7 @@ def ticket_view_page():
     return render_template("ticket_view.html")
 
 
-# ================= BOOK TICKET WITH PAYMENT =================
+# ================= BOOK TICKET WITH OBSERVER PATTERN =================
 
 @booking.route("/book", methods=["POST"])
 @jwt_required()
@@ -83,6 +84,8 @@ def book_ticket():
         journey_date = data["journey_date"]
         seat_no = data["seat_no"]
         seat_class = data["seat_class"]
+        departure_time = data.get("departure_time", "Selected schedule")
+        arrival_time = data.get("arrival_time", "")
 
         # Get price from master route data
         price = get_price(transport_type, source, destination)
@@ -154,13 +157,21 @@ def book_ticket():
             "plane": "Business + Economy class layout",
         }.get(str(transport_type).lower(), "Seat layout")
 
+        # Get user details for notification
+        user_doc = DB.users().find_one({"_id": ObjectId(user_id)}) or {}
+        user_name = user_doc.get("name", "User")
+        user_email = user_doc.get("email", "")
+
+        # Save to database
         booking_doc = {
             "user_id": user_id,
+            "user_name": user_name,
+            "user_email": user_email,
             "ticket": ticket.to_dict(),
             "operator": operator,
             "journey_date": journey_date,
-            "departure_time": data.get("departure_time", "Selected schedule"),
-            "arrival_time": data.get("arrival_time", ""),
+            "departure_time": departure_time,
+            "arrival_time": arrival_time,
             "seat_no": seat_no,
             "seat_class": seat_class,
             "seat_layout": seat_layout,
@@ -174,25 +185,34 @@ def book_ticket():
         result = DB.bookings().insert_one(booking_doc)
         booking_id = str(result.inserted_id)
 
-        DB.notifications().insert_one({
+        # ============================================================
+        # OBSERVER PATTERN - Send notifications to all observers
+        # ============================================================
+        notification_data = {
+            "booking_id": booking_id,
             "user_id": user_id,
-            "message": (
-                f"Booking confirmed! {ticket.type} ticket: "
-                f"{ticket.source} → {ticket.destination}, "
-                f"Seat {seat_no}, Payment: {receipt.method}"
-            ),
-            "type": "booking",
-            "read": False,
-            "created_at": datetime.utcnow().isoformat(),
-        })
+            "user_name": user_name,
+            "user_email": user_email,
+            "ticket": ticket.to_dict(),
+            "operator": operator,
+            "payment": receipt.method,
+            "seat_no": seat_no,
+            "journey_date": journey_date,
+            "departure_time": departure_time
+        }
+        
+        # This will trigger ALL attached observers (WebsiteNotificationObserver)
+        booking_subject.notify(notification_data)
+        
+        print(f"✅ Booking {booking_id} completed. Observer notified.")
 
         return jsonify({
             "message": "Booking Successful ✅",
             "booking_id": booking_id,
             "ticket": ticket.to_dict(),
             "operator": operator,
-            "departure_time": data.get("departure_time", ""),
-            "arrival_time": data.get("arrival_time", ""),
+            "departure_time": departure_time,
+            "arrival_time": arrival_time,
             "seat_no": seat_no,
             "seat_class": seat_class,
             "payment": receipt.to_dict(),
@@ -331,7 +351,7 @@ def mark_notification_read():
                 "message": "Notification ID is required ❌"
             }), 400
 
-        DB.notifications().update_one(
+        result = DB.notifications().update_one(
             {
                 "_id": ObjectId(notification_id),
                 "user_id": user_id
@@ -343,11 +363,38 @@ def mark_notification_read():
             }
         )
 
-        return jsonify({
-            "message": "Marked as read ✅"
-        })
+        if result.modified_count > 0:
+            return jsonify({
+                "message": "Marked as read ✅"
+            })
+        else:
+            return jsonify({
+                "message": "Notification not found or already read"
+            }), 404
 
     except Exception as e:
         return jsonify({
             "message": str(e)
         }), 500
+
+
+# ================= MARK ALL NOTIFICATIONS AS READ =================
+
+@booking.route("/notifications/mark-all-read", methods=["POST"])
+@jwt_required()
+def mark_all_notifications_read():
+    try:
+        user_id = get_jwt_identity()
+        
+        result = DB.notifications().update_many(
+            {"user_id": user_id, "read": False},
+            {"$set": {"read": True}}
+        )
+        
+        return jsonify({
+            "message": f"{result.modified_count} notifications marked as read ✅",
+            "count": result.modified_count
+        })
+        
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500

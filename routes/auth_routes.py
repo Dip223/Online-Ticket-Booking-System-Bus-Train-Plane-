@@ -213,3 +213,9 @@ def train_schedule_page():
 @auth.route('/plane-schedule')
 def plane_schedule_page():
     return render_template("plane_schedule.html")
+
+# ================= NOTIFICATIONS PAGE =================
+
+@auth.route("/notifications-page")
+def notifications_page():
+    return render_template("notifications.html")

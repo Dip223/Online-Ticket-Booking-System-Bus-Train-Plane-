@@ -124,7 +124,7 @@ function updateDestinations() {
   const available = routesData.filter(r => r.from === source);
   const destSelect = document.getElementById("destination");
   destSelect.innerHTML = available.map(r => 
-    `<option value="${r.to}|${r.price}">${r.to} — ৳${r.price}</option>`
+    `<option value="${r.to}|${r.price}">${r.to}</option>`
   ).join("");
 }
 

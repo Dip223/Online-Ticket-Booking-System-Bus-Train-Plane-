@@ -4,6 +4,7 @@ Concrete Decorators - Like CondimentDecorator and SideDecorator
 """
 
 from models.ticket_decorator import TicketDecorator
+from models.ticket_component import TicketComponent  # ← ADD THIS LINE
 
 
 # ============= COMMON DECORATORS (All Transports) =============

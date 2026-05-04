@@ -42,4 +42,4 @@ class PremiumTicket(TicketComponent):
     
     def get_features(self) -> list:
         # No automatic features - only add-ons will be added by decorators
-        return ["Premium ticket (enables add-ons)"]
+        return ["Premium ticket"]

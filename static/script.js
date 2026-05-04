@@ -46,7 +46,6 @@ function login() {
     return;
   }
 
-  // Disable button and show loading state
   const btn = document.querySelector(".btn-login");
   if (btn) {
     btn.disabled = true;
@@ -61,7 +60,6 @@ function login() {
   .then(r => r.json())
   .then(d => {
     if (d.token) {
-      // Save everything to localStorage
       localStorage.setItem("token",   d.token);
       localStorage.setItem("user_id", d.user_id  || "");
       localStorage.setItem("name",    d.name     || "");
@@ -71,13 +69,7 @@ function login() {
       const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
 
       if (isAdmin) {
-        // Show admin redirect message
-        showAlert(
-          "loginAlert",
-          `<i class="fas fa-crown" style="color:#f59e0b;margin-right:6px"></i>
-           Welcome Admin! Redirecting to Admin Panel...`,
-          "ok"
-        );
+        showAlert("loginAlert", `<i class="fas fa-crown" style="color:#f59e0b;margin-right:6px"></i> Welcome Admin! Redirecting to Admin Panel...`, "ok");
         if (btn) btn.innerHTML = '<i class="fas fa-shield-alt"></i> Entering Admin Panel...';
         setTimeout(() => { window.location = "/admin"; }, 1200);
       } else {
@@ -85,10 +77,8 @@ function login() {
         if (btn) btn.innerHTML = '<i class="fas fa-check"></i> Success!';
         setTimeout(() => { window.location = "/dashboard"; }, 800);
       }
-
     } else {
       showAlert("loginAlert", d.message || "Login failed ❌", "err");
-      // Re-enable button on failure
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-sign-in-alt"></i>Login to Account';
@@ -168,6 +158,7 @@ function logout() { localStorage.clear(); window.location = "/"; }
 function goBus()   { window.location = "/bus";   }
 function goTrain() { window.location = "/train"; }
 function goPlane() { window.location = "/plane"; }
+function goToDashboard() { window.location = "/dashboard"; }
 
 /* ── DASHBOARD ROUTE LOADING ──────────────────────────────── */
 let _routes  = [];
@@ -539,6 +530,160 @@ function updateResetStep(n) {
     const ln = document.getElementById("pl" + i);
     if (ln) ln.className = "p-line " + (i < n ? "done" : "");
   });
+}
+
+/* ================= SMS OTP FUNCTIONS (For Train & Plane Booking) ================= */
+
+let otpTimerGlobal = 60;
+let otpIntervalGlobal;
+
+async function sendOTP() {
+    const nid = document.getElementById("nidNumber")?.value.trim();
+    const mobile = document.getElementById("mobileNumber")?.value.trim();
+    
+    if (!nid || nid.length < 10) {
+        showMessage("verifyMsg", "Please enter a valid NID number (10-17 digits)", "err");
+        return;
+    }
+    if (!mobile || !mobile.match(/^01[0-9]{9}$/)) {
+        showMessage("verifyMsg", "Please enter a valid 11-digit Bangladesh phone number (01XXXXXXXXX)", "err");
+        return;
+    }
+    
+    const sendBtn = document.getElementById("sendOtpBtn");
+    if (!sendBtn) return;
+    
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
+    try {
+        const response = await fetch(API + "/send-sms-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone_number: mobile, nid: nid })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showMessage("verifyMsg", data.message, "ok");
+            const otpSection = document.getElementById("otpSection");
+            if (otpSection) otpSection.style.display = "block";
+            startOTPTimerGlobal();
+        } else {
+            showMessage("verifyMsg", data.message, "err");
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send OTP';
+        }
+    } catch (err) {
+        showMessage("verifyMsg", "Failed to send OTP. Please try again.", "err");
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = 'Send OTP';
+    }
+}
+
+function startOTPTimerGlobal() {
+    const sendBtn = document.getElementById("sendOtpBtn");
+    if (!sendBtn) return;
+    otpTimerGlobal = 60;
+    otpIntervalGlobal = setInterval(() => {
+        otpTimerGlobal--;
+        if (otpTimerGlobal >= 0) {
+            sendBtn.innerHTML = `Resend (${otpTimerGlobal}s)`;
+        }
+        if (otpTimerGlobal <= 0) {
+            clearInterval(otpIntervalGlobal);
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send OTP';
+        }
+    }, 1000);
+}
+
+async function verifyOTP() {
+    const mobile = document.getElementById("mobileNumber")?.value.trim();
+    const otp = document.getElementById("otpCode")?.value.trim();
+    
+    if (!otp || otp.length !== 6) {
+        showMessage("verifyMsg", "Please enter the 6-digit OTP", "err");
+        return;
+    }
+    
+    const verifyBtn = document.getElementById("verifyOtpBtn");
+    if (!verifyBtn) return;
+    
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+    
+    try {
+        const response = await fetch(API + "/verify-sms-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone_number: mobile, otp: otp })
+        });
+        
+        const data = await response.json();
+        
+        if (data.verified) {
+            showMessage("verifyMsg", "✓ Identity verified successfully!", "ok");
+            window.isVerified = true;
+            localStorage.setItem("temp_mobile", mobile);
+            localStorage.setItem("temp_nid", document.getElementById("nidNumber")?.value.trim() || "");
+            
+            // Enable continue button
+            const continueBtn = document.getElementById("continueBtn");
+            if (continueBtn) {
+                continueBtn.disabled = false;
+                continueBtn.style.opacity = "1";
+                continueBtn.style.cursor = "pointer";
+            }
+            
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = 'Verified ✓';
+            verifyBtn.style.background = "#10b981";
+            
+            showToast("Identity verified! Click Continue to proceed.", "ok");
+        } else {
+            showMessage("verifyMsg", data.message || "Invalid OTP. Please try again.", "err");
+            verifyBtn.disabled = false;
+            verifyBtn.innerHTML = 'Verify';
+        }
+    } catch (err) {
+        console.error("Verification error:", err);
+        showMessage("verifyMsg", "Verification failed. Please try again.", "err");
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = 'Verify';
+    }
+}
+
+function showMessage(elementId, msg, type) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "msg-box " + type;
+    el.style.display = "block";
+    setTimeout(() => {
+        if (el.className === "msg-box " + type) {
+            el.style.display = "none";
+            el.className = "msg-box";
+        }
+    }, 5000);
+}
+
+function continueToSchedule() {
+    if (!window.isVerified && !localStorage.getItem("temp_mobile")) {
+        showToast("Please verify your identity first! ❌", "err");
+        return;
+    }
+    
+    // Get the transport type from URL or hidden input
+    const path = window.location.pathname;
+    let transport = "train";
+    if (path.includes("bus")) transport = "bus";
+    else if (path.includes("plane")) transport = "plane";
+    else if (path.includes("train")) transport = "train";
+    
+    // Redirect to schedule selection page
+    window.location = `/schedule-selection?type=${transport}`;
 }
 
 /* ── INIT: notifications on dashboard ─────────────────────── */

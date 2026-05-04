@@ -1,7 +1,7 @@
 """
 config.py
 =========
-TRUE SINGLETON PATTERN for MongoDB Connection.
+SINGLETON PATTERN for MongoDB Connection.
 
 A Singleton ensures a class has ONLY ONE instance and provides
 a global access point to it. This is implemented using:
@@ -21,7 +21,7 @@ EMAIL    = "zihadmuzahid2003@gmail.com"
 PASSWORD = "luzwnlvtmsfhlzxt"
 
 # JWT Secret Key
-JWT_SECRET = "bdticket_super_secret_jwt_2024"
+JWT_SECRET_KEY = "bdticket_super_secret_jwt_2024"
 
 
 class SingletonMeta(type):

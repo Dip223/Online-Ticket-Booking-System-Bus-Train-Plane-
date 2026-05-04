@@ -36,6 +36,20 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 .btn-next:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(249,115,22,.3)}
 .btn-back-page{width:100%;margin-top:16px;padding:14px;background:#f1f5f9;color:var(--sub);border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-back-page:hover{background:#e2e8f0;color:var(--txt)}
+
+/* Verification Section Styles */
+.verify-section{margin-top:20px;padding:20px;background:#f8fafc;border-radius:16px;border:1px solid var(--bdr)}
+.verify-section h3{font-size:16px;margin-bottom:15px;color:var(--txt);display:flex;align-items:center;gap:8px}
+.verify-section h3 i{color:#f97316}
+.verify-row{display:flex;gap:12px;align-items:center}
+.verify-row input{flex:2}
+.verify-row button{flex:1;padding:14px;background:#f97316;color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;transition:.2s}
+.verify-row button:hover{background:#c2410c}
+.verify-row button:disabled{background:#94a3b8;cursor:not-allowed}
+.msg-box{padding:12px;border-radius:12px;margin-bottom:16px;display:none}
+.msg-box.ok{background:#dcfce7;color:#166534;border:1px solid #16a34a;display:block}
+.msg-box.err{background:#fee2e2;color:#991b1b;border:1px solid #dc2626;display:block}
+.otp-section{display:none;margin-top:15px}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--nav);color:#fff;padding:14px 20px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:0 8px 32px rgba(0,0,0,.22);transform:translateY(80px);opacity:0;transition:.3s;z-index:999}
 .toast.show{transform:translateY(0);opacity:1}
 </style>
@@ -44,7 +58,7 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 
 <nav>
   <a href="/dashboard" class="logo">
-    <div class="logo-box"><i class="fas fa-ticket-alt"></i></div>
+    <div class="logo-box"><i class="fas fa-plane"></i></div>
     <div class="logo-name">BD<span>Ticket</span></div>
   </a>
   <div class="nav-r">
@@ -60,6 +74,7 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 
 <div class="container">
   <div class="card">
+    <!-- Journey Details -->
     <div class="row2cols">
       <div class="field">
         <label><i class="fas fa-map-marker-alt"></i> From</label>
@@ -76,8 +91,40 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
       <input type="date" id="journeyDate">
     </div>
     
-    <button class="btn-next" onclick="goToNext()">
-      <i class="fas fa-arrow-right"></i> Next: Choose Operator & Payment
+    <!-- Verification Section (NID + SMS OTP) -->
+    <div id="verifySection" style="display:none;">
+      <div class="verify-section">
+        <div id="verifyMsg" class="msg-box"></div>
+        
+        <h3><i class="fas fa-id-card"></i> Identity Verification</h3>
+        <div class="field">
+          <label><i class="fas fa-id-card"></i> NID Number</label>
+          <input type="text" id="nidNumber" placeholder="Enter your 10 or 17 digit NID number" maxlength="17">
+        </div>
+        
+        <div class="field">
+          <label><i class="fas fa-mobile-alt"></i> Mobile Number</label>
+          <div class="verify-row">
+            <input type="tel" id="mobileNumber" placeholder="01XXXXXXXXX" maxlength="11">
+            <button id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+          </div>
+        </div>
+        
+        <div id="otpSection" class="otp-section">
+          <div class="verify-row">
+            <input type="text" id="otpCode" placeholder="Enter 6-digit OTP" maxlength="6">
+            <button id="verifyOtpBtn" onclick="verifyOTP()">Verify</button>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn-next" id="continueBtn" onclick="goToSchedule()" disabled>
+        <i class="fas fa-arrow-right"></i> Continue to Schedule
+      </button>
+    </div>
+    
+    <button class="btn-next" id="initialNextBtn" onclick="showVerifySection()">
+      <i class="fas fa-arrow-right"></i> Next: Verify Identity
     </button>
     
     <button class="btn-back-page" onclick="window.location='/dashboard'">
@@ -91,10 +138,11 @@ nav{background:var(--nav);height:64px;display:flex;align-items:center;justify-co
 <script src="/static/script.js"></script>
 <script>
 let routesData = [];
+let selectedJourney = {};
 
 async function loadRoutes() {
   try {
-    const res = await fetch("http://127.0.0.1:5000/plane-routes");
+    const res = await fetch(API + "/plane-routes");
     const data = await res.json();
     routesData = data.routes || [];
     
@@ -105,6 +153,8 @@ async function loadRoutes() {
     if (sources.length > 0) {
       updateDestinations();
       sourceSelect.onchange = () => updateDestinations();
+      document.getElementById("destination").onchange = () => updateJourney();
+      document.getElementById("journeyDate").onchange = () => updateJourney();
     }
     
     const today = new Date().toISOString().split('T')[0];
@@ -119,18 +169,12 @@ function updateDestinations() {
   const available = routesData.filter(r => r.from === source);
   const destSelect = document.getElementById("destination");
   destSelect.innerHTML = available.map(r => 
-    `<option value="${r.to}|${r.price}">${r.to}</option>`
+    `<option value="${r.to}|${r.price}">${r.to} — ৳${r.price}</option>`
   ).join("");
+  updateJourney();
 }
 
-function showToast(msg, type) {
-  const el = document.getElementById("toast");
-  el.innerHTML = `<i class="fas fa-${type==='ok'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
-  el.className = "toast " + (type||"ok") + " show";
-  setTimeout(() => el.classList.remove("show"), 3500);
-}
-
-function goToNext() {
+function updateJourney() {
   const source = document.getElementById("source").value;
   const destVal = document.getElementById("destination").value;
   const destParts = destVal.split("|");
@@ -138,7 +182,15 @@ function goToNext() {
   const price = destParts[1];
   const journeyDate = document.getElementById("journeyDate").value;
   
-  if (!source || !destination) {
+  selectedJourney = { source, destination, price, journeyDate };
+}
+
+function showVerifySection() {
+  const source = document.getElementById("source").value;
+  const destVal = document.getElementById("destination").value;
+  const journeyDate = document.getElementById("journeyDate").value;
+  
+  if (!source || !destVal) {
     showToast("Please select both source and destination ❌", "err");
     return;
   }
@@ -147,17 +199,26 @@ function goToNext() {
     return;
   }
   
-  sessionStorage.setItem("plane_selection", JSON.stringify({
-    source, destination, price, journeyDate
-  }));
+  document.getElementById("initialNextBtn").style.display = "none";
+  document.getElementById("verifySection").style.display = "block";
+}
+
+function goToSchedule() {
+  if (typeof window.isVerified === 'undefined' || !window.isVerified) {
+    showToast("Please verify your identity first ❌", "err");
+    return;
+  }
   
+  updateJourney();
+  sessionStorage.setItem("plane_selection", JSON.stringify(selectedJourney));
   window.location = "/plane-schedule";
 }
 
-function logout() { localStorage.clear(); window.location = "/"; }
-
 window.onload = function() {
-  if (!localStorage.getItem("token")) { window.location = "/"; return; }
+  if (!localStorage.getItem("token")) { 
+    window.location = "/"; 
+    return; 
+  }
   const name = localStorage.getItem("name") || "User";
   document.getElementById("navName").textContent = name;
   loadRoutes();

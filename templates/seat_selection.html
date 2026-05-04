@@ -90,6 +90,92 @@
 .pay-input-row .pay-input {
   flex: 1;
 }
+
+/* ── DECORATOR PATTERN UI - Add-ons Section ── */
+.decorator-section {
+  margin: 18px 0 10px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+}
+.decorator-section h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+.addon-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.addon-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all .2s;
+}
+.addon-checkbox.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.addon-checkbox:hover {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+.addon-checkbox input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #16a34a;
+}
+.addon-checkbox input:disabled {
+  cursor: not-allowed;
+}
+.addon-info {
+  flex: 1;
+  margin-left: 12px;
+}
+.addon-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+}
+.addon-price {
+  font-size: 12px;
+  color: #64748b;
+}
+.addon-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.premium-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+.premium-toggle label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+}
+.premium-toggle input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #f59e0b;
+}
 </style>
 </head>
 
@@ -170,6 +256,33 @@
         <strong id="sumClass">-</strong>
       </div>
 
+      <!-- ══ DECORATOR PATTERN - ADD-ONS SECTION ══ -->
+      <div class="decorator-section">
+        <h3><i class="fas fa-layer-group"></i> Add-ons (Decorator Pattern)</h3>
+        
+        <div class="premium-toggle">
+          <label><i class="fas fa-crown"></i> Premium Ticket (Free Upgrade)</label>
+          <input type="checkbox" id="premiumCheckbox" onchange="onPremiumToggle()">
+        </div>
+        
+        <div class="addon-options" id="addonsContainer"></div>
+        
+        <div style="margin-top: 12px; padding: 10px; background: #e8f5e9; border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span><i class="fas fa-calculator"></i> Base Fare:</span>
+            <strong id="previewBaseFare">0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+            <span><i class="fas fa-plus-circle"></i> Add-ons Total:</span>
+            <strong id="previewAddonTotal" style="color:#16a34a">0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #c8e6c9;">
+            <span><i class="fas fa-ticket-alt"></i> Total with Decorators:</span>
+            <strong id="previewTotal" style="font-size: 18px; color:#16a34a">0</strong>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ PAYMENT METHOD SELECTOR ══ -->
       <div class="payment-section">
         <h3><i class="fas fa-credit-card"></i> Payment Method</h3>
@@ -227,7 +340,18 @@ const STORAGE_KEY = TRANSPORT_TYPE + "_selection";
 
 let journey = {};
 let selectedSeat = null;
-let selectedPaymentMethod = null;   // ← tracks chosen payment method
+let selectedPaymentMethod = null;
+let selectedAddons = new Set();
+let isPremium = false;
+
+// Voucher only for Hanif bus (10% discount)
+const HANIF_VOUCHER = {
+  id: "voucher",
+  name: "Hanif Voucher",
+  price: "10% off",
+  description: "10% discount for Hanif Transport only",
+  voucher_code: "HANIF10"
+};
 
 function titleCase(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -253,21 +377,236 @@ function showToast(msg, type = "ok") {
 function selectPayment(method) {
   selectedPaymentMethod = method;
 
-  // Highlight active button
   document.querySelectorAll(".payment-method-btn").forEach(btn => btn.classList.remove("active"));
   document.querySelector(`.payment-method-btn.${method}`).classList.add("active");
 
-  // Show/hide relevant fields
   document.getElementById("fieldsPhone").style.display = (method === "bkash" || method === "nagad") ? "flex" : "none";
   document.getElementById("fieldsCard").style.display  = (method === "card")  ? "flex" : "none";
 
-  // Re-check confirm button state
   updateConfirmButton();
 }
 
 function updateConfirmButton() {
   const btn = document.getElementById("confirmBtn");
   btn.disabled = !(selectedSeat && selectedPaymentMethod);
+}
+
+// ── Decorator Pattern: Add-ons UI ────────────────────────────────────────────
+function loadAddonsUI() {
+  const container = document.getElementById("addonsContainer");
+  if (!container) return;
+  
+  let addonsList = [];
+  const isHanif = journey.operator && (journey.operator === "Hanif" || journey.operator === "Hanif Transport");
+  
+  // Meal is common for all transports
+  addonsList.push({ id: "meal", name: "Complimentary Meal", price: 150, description: "Hot meal included" });
+  
+  // Add transport-specific add-ons
+  if (TRANSPORT_TYPE === "plane") {
+    addonsList.push(
+      { id: "insurance", name: "Travel Insurance", price: 300, description: "Flight cancellation + medical coverage" },
+      { id: "luggage", name: "Extra Luggage", price: 200, description: "+10kg luggage allowance" },
+      { id: "priority", name: "Priority Boarding", price: 300, description: "Skip the queue" },
+      { id: "lounge", name: "VIP Lounge Access", price: 400, description: "Airport lounge access" }
+    );
+  } else if (TRANSPORT_TYPE === "train") {
+    addonsList.push(
+      { id: "insurance", name: "Rail Insurance", price: 50, description: "Journey protection for train travel" }
+    );
+  } else if (TRANSPORT_TYPE === "bus") {
+    addonsList.push(
+      { id: "insurance", name: "Bus Insurance", price: 50, description: "Trip protection for bus travel" }
+    );
+    // Add Hanif voucher only for Hanif operator
+    if (isHanif) {
+      addonsList.push(HANIF_VOUCHER);
+    }
+  }
+  
+  container.innerHTML = addonsList.map(addon => `
+    <label class="addon-checkbox" data-addon-id="${addon.id}">
+      <input type="checkbox" value="${addon.id}" onchange="toggleAddon(this)" disabled>
+      <div class="addon-info">
+        <div class="addon-name">${addon.name}</div>
+        <div class="addon-price">${typeof addon.price === 'number' ? '+৳' + addon.price : addon.price}</div>
+        <div class="addon-desc">${addon.description}</div>
+      </div>
+    </label>
+  `).join('');
+  
+  // Store voucher code if available
+  if (isHanif && HANIF_VOUCHER.voucher_code) {
+    window.voucherCode = HANIF_VOUCHER.voucher_code;
+  }
+  
+  // Initially disable all add-ons (Premium not selected by default)
+  updateAddonsState();
+}
+
+// Enable/disable add-ons based on Premium selection
+function updateAddonsState() {
+  const isPremiumChecked = document.getElementById("premiumCheckbox")?.checked || false;
+  const allCheckboxes = document.querySelectorAll("#addonsContainer input[type='checkbox']");
+  const allLabels = document.querySelectorAll("#addonsContainer .addon-checkbox");
+  
+  allCheckboxes.forEach(checkbox => {
+    if (isPremiumChecked) {
+      checkbox.disabled = false;
+    } else {
+      checkbox.disabled = true;
+      checkbox.checked = false;
+    }
+  });
+  
+  allLabels.forEach(label => {
+    if (isPremiumChecked) {
+      label.style.opacity = "1";
+      label.style.cursor = "pointer";
+    } else {
+      label.style.opacity = "0.6";
+      label.style.cursor = "not-allowed";
+    }
+  });
+  
+  // Clear selected addons if premium is unchecked
+  if (!isPremiumChecked) {
+    selectedAddons.clear();
+  }
+}
+
+// Toggle add-on (only allowed if Premium is selected)
+function toggleAddon(checkbox) {
+  const isPremiumChecked = document.getElementById("premiumCheckbox")?.checked || false;
+  
+  if (!isPremiumChecked) {
+    checkbox.checked = false;
+    showToast("Please select Premium ticket first to add features ❌", "err");
+    return;
+  }
+  
+  if (checkbox.checked) {
+    selectedAddons.add(checkbox.value);
+  } else {
+    selectedAddons.delete(checkbox.value);
+  }
+  updateTotalPreview();
+}
+
+// Handle Premium checkbox toggle
+function onPremiumToggle() {
+  isPremium = document.getElementById("premiumCheckbox")?.checked || false;
+  updateAddonsState();
+  updateTotalPreview();
+  
+  if (!isPremium) {
+    // Clear all selected addons when premium is unchecked
+    document.querySelectorAll("#addonsContainer input[type='checkbox']").forEach(cb => {
+      cb.checked = false;
+    });
+    selectedAddons.clear();
+    updateTotalPreview();
+    showToast("✨ Premium ticket activated! You can now add extra features.", "ok");
+  } else {
+    showToast("✨ Premium ticket activated! You can now add extra features.", "ok");
+  }
+}
+
+function updateTotalPreview() {
+  isPremium = document.getElementById("premiumCheckbox")?.checked || false;
+  
+  let baseFare = parseInt(journey.price) || 0;
+  let addonTotal = 0;
+  
+  // Only calculate add-ons if Premium is selected
+  if (isPremium) {
+    // Check for Hanif voucher (10% discount on base fare)
+    const isHanif = journey.operator && (journey.operator === "Hanif" || journey.operator === "Hanif Transport");
+    if (isHanif && selectedAddons.has("voucher")) {
+      const discount = Math.floor(baseFare * 0.1);
+      addonTotal = addonTotal - discount;
+    }
+    
+    // Calculate add-on costs based on selection
+    selectedAddons.forEach(addonId => {
+      // Meal (common)
+      if (addonId === "meal") {
+        addonTotal += 150;
+      }
+      // Plane add-ons
+      else if (addonId === "luggage") {
+        addonTotal += 200;
+      }
+      else if (addonId === "priority") {
+        addonTotal += 300;
+      }
+      else if (addonId === "lounge") {
+        addonTotal += 400;
+      }
+      else if (addonId === "insurance" && TRANSPORT_TYPE === "plane") {
+        addonTotal += 300;
+      }
+      // Train insurance
+      else if (addonId === "insurance" && TRANSPORT_TYPE === "train") {
+        addonTotal += 50;
+      }
+      // Bus insurance
+      else if (addonId === "insurance" && TRANSPORT_TYPE === "bus") {
+        addonTotal += 50;
+      }
+    });
+  }
+  
+  // Premium ticket has NO extra cost - same as base fare
+  const total = baseFare + addonTotal;
+  
+  document.getElementById("previewBaseFare").textContent = "৳" + baseFare;
+  
+  if (addonTotal > 0) {
+    document.getElementById("previewAddonTotal").innerHTML = "+৳" + addonTotal;
+  } else if (addonTotal < 0) {
+    document.getElementById("previewAddonTotal").innerHTML = "-৳" + Math.abs(addonTotal);
+  } else {
+    document.getElementById("previewAddonTotal").innerHTML = "৳0";
+  }
+  document.getElementById("previewTotal").textContent = "৳" + Math.max(0, total);
+}
+
+// ── Apply decorators after booking ───────────────────────────────────────────
+async function applyDecorators(bookingId) {
+  const addonsList = Array.from(selectedAddons);
+  
+  if (addonsList.length === 0 && !isPremium) {
+    return { success: true, noAddons: true };
+  }
+  
+  try {
+    const payload = {
+      booking_id: bookingId,
+      premium: isPremium,
+      addons: addonsList
+    };
+    
+    if (selectedAddons.has("voucher") && window.voucherCode) {
+      payload.voucher_code = window.voucherCode;
+    }
+    
+    const response = await fetch(API + "/decorator/addons", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + getToken()
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await response.json();
+    return { success: response.ok, data: data };
+    
+  } catch (error) {
+    console.error("Decorator error:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 // ── Collect payment info from fields ─────────────────────────────────────────
@@ -336,6 +675,10 @@ async function loadSeats() {
     return;
   }
   renderSeats(data.seats || []);
+  
+  // Load add-ons UI after seats are loaded
+  loadAddonsUI();
+  updateTotalPreview();
 }
 
 function renderSeats(seats) {
@@ -460,13 +803,13 @@ function selectSeat(button, seat) {
 
   document.getElementById("selectedSeatText").textContent = seat.seat_no;
   document.getElementById("sumClass").textContent         = seat.class_type;
-  document.getElementById("messageBox").textContent       = `Seat ${seat.seat_no} selected. Now choose a payment method.`;
+  document.getElementById("messageBox").textContent       = `Seat ${seat.seat_no} selected. Choose add-ons and payment method.`;
   document.getElementById("messageBox").className         = "note success";
 
   updateConfirmButton();
 }
 
-// ── Confirm booking ───────────────────────────────────────────────────────────
+// ── Confirm booking with Decorator Pattern ────────────────────────────────────
 async function confirmBooking() {
   if (!selectedSeat) {
     showToast("Please select a seat first.", "err");
@@ -521,8 +864,8 @@ async function confirmBooking() {
     arrival_time:   journey.arrival_time   || "",
     seat_no:        selectedSeat.seat_no,
     seat_class:     selectedSeat.class_type,
-    payment_method: selectedPaymentMethod,   // ← THE FIX
-    ...paymentInfo,                           // ← phone/pin or card fields
+    payment_method: selectedPaymentMethod,
+    ...paymentInfo,
   };
 
   try {
@@ -543,8 +886,20 @@ async function confirmBooking() {
       return;
     }
 
-    showToast("Booking confirmed! Opening ticket... ✅", "ok");
-    setTimeout(() => { window.location = "/ticket-view?id=" + data.booking_id; }, 800);
+    showToast("Booking confirmed! Applying add-ons... ✅", "ok");
+    
+    // Apply Decorator Pattern add-ons
+    const decoratorResult = await applyDecorators(data.booking_id);
+    
+    if (decoratorResult.success && decoratorResult.data) {
+      showToast(`Decorators applied! Total: ৳${decoratorResult.data.total_cost}`, "ok");
+    } else if (decoratorResult.success && decoratorResult.noAddons) {
+      showToast("Booking confirmed! ✅", "ok");
+    } else {
+      showToast("Booking confirmed but add-ons failed.", "err");
+    }
+    
+    setTimeout(() => { window.location = "/ticket-view?id=" + data.booking_id; }, 1500);
 
   } catch (error) {
     showToast("Server error. Please check Flask server.", "err");

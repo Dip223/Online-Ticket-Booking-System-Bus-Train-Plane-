@@ -21,12 +21,17 @@ class TicketView:
         self.footer_note = ""
         self.ticket_code = ""
         self.sections = []
+        self.decorator_features = []  # ← ADDED for Decorator Pattern
 
     def add_section(self, title: str, rows: dict):
         self.sections.append({
             "title": title,
             "rows": rows
         })
+    
+    def add_decorator_feature(self, feature: str):  # ← ADDED
+        """Add a decorator feature to the ticket"""
+        self.decorator_features.append(feature)
 
     def to_dict(self):
         return {
@@ -42,6 +47,7 @@ class TicketView:
             "footer_note":    self.footer_note,
             "ticket_code":    self.ticket_code,
             "sections":       self.sections,
+            "decorator_features": self.decorator_features,  # ← ADDED
         }
 
 
@@ -90,7 +96,6 @@ class TicketBuilder(ABC):
             "Layout":        booking_doc.get("seat_layout", "N/A"),
         })
 
-    # ── FIX: was accidentally de-indented to module level ──────────────────────
     def add_fare_info(self, booking_doc: dict, user_doc: dict):
         ticket  = booking_doc.get("ticket", {})
         payment = booking_doc.get("payment", {})
@@ -102,6 +107,13 @@ class TicketBuilder(ABC):
             "Transaction ID": payment.get("transaction_id", "N/A"),
             "Paid At":        payment.get("paid_at", "N/A"),
         })
+
+    def add_decorator_info(self, booking_doc: dict, user_doc: dict):  # ← ADDED
+        """Add decorator pattern add-ons information to the ticket"""
+        decorators = booking_doc.get("decorators", [])
+        if decorators:
+            for decorator in decorators:
+                self.product.add_decorator_feature(decorator)
 
     @abstractmethod
     def add_transport_specific_info(self, booking_doc: dict, user_doc: dict):
@@ -225,6 +237,7 @@ class TicketDirector:
         self.builder.add_seat_info(booking_doc, user_doc)
         self.builder.add_fare_info(booking_doc, user_doc)
         self.builder.add_transport_specific_info(booking_doc, user_doc)
+        self.builder.add_decorator_info(booking_doc, user_doc)  # ← ADDED
         self.builder.add_ticket_style()
         self.builder.add_footer(booking_doc, user_doc)
 

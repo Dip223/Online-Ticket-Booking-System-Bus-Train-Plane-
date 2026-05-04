@@ -180,6 +180,7 @@ def book_ticket():
             "payment_status": receipt.status,
             "status": "CONFIRMED",
             "booked_at": datetime.utcnow().isoformat(),
+            "decorators": [],  # ← ADDED: initialize empty decorators list
         }
 
         result = DB.bookings().insert_one(booking_doc)
@@ -398,3 +399,181 @@ def mark_all_notifications_read():
         
     except Exception as e:
         return jsonify({"message": str(e)}), 500
+
+
+# ================= DECORATOR PATTERN ENDPOINTS =================
+
+@booking.route("/decorator/addons", methods=["POST"])
+@jwt_required()
+def add_decorators_to_ticket():
+    """
+    Demonstrate Decorator Pattern with transport-specific features
+    Like adding condiments and sides to a sandwich
+    
+    Features:
+    - Plane: Insurance (300), Priority Boarding (300), Lounge Access (400)
+    - Train: Insurance (50)
+    - Bus: Insurance (50), Hanif Voucher (10% off)
+    - Common: Extra Luggage (200), Meal (150)
+    - Base: Basic or Premium ticket
+    """
+    try:
+        from models.base_ticket import BaseTicket, PremiumTicket
+        from models.transport_decorator import (
+            ExtraLuggageDecorator, MealDecorator, InsuranceDecorator,
+            PriorityBoardingDecorator, LoungeAccessDecorator, HanifVoucherDecorator
+        )
+        
+        data = request.json
+        booking_id = data.get("booking_id")
+        addons = data.get("addons", [])  # ['luggage', 'meal', 'insurance', 'priority', 'lounge', 'voucher']
+        premium = data.get("premium", False)
+        voucher_code = data.get("voucher_code", "HANIF10")
+        
+        user_id = get_jwt_identity()
+        
+        # Get booking from database
+        booking = DB.bookings().find_one({
+            "_id": ObjectId(booking_id),
+            "user_id": user_id
+        })
+        
+        if not booking:
+            return jsonify({"message": "Booking not found ❌"}), 404
+        
+        # Create Ticket object from booking data
+        ticket_data = booking.get("ticket", {})
+        operator = booking.get("operator", "")
+        
+        ticket = TicketFactory.create_ticket(
+            transport_type=ticket_data.get("type", ""),
+            source=ticket_data.get("source", ""),
+            destination=ticket_data.get("destination", ""),
+            price=ticket_data.get("price", 0)
+        )
+        
+        # Attach operator to ticket for decorator access
+        ticket.operator = operator
+        
+        transport = ticket.type.lower()
+        
+        # ============= DECORATOR PATTERN IN ACTION =============
+        # Like in main.cpp:
+        # SandwichOrder *sandwich1 = new DeluxeSandwich;
+        # SandwichOrder *decorated1 = new CondimentDecorator("mayo", sandwich1);
+        
+        # Step 1: Choose base component (Basic or Premium)
+        if premium:
+            ticket_component = PremiumTicket(ticket)
+        else:
+            ticket_component = BaseTicket(ticket)
+        
+        original_cost = ticket_component.get_cost()
+        applied_addons = []
+        errors = []
+        
+        # Step 2: Apply decorators (like adding condiments and sides)
+        for addon in addons:
+            addon = addon.lower()
+            
+            try:
+                if addon == "luggage":
+                    ticket_component = ExtraLuggageDecorator(ticket_component)
+                    applied_addons.append("Extra Luggage (+200 BDT)")
+                
+                elif addon == "meal":
+                    ticket_component = MealDecorator(ticket_component)
+                    applied_addons.append("Meal (+150 BDT)")
+                
+                elif addon == "insurance":
+                    ticket_component = InsuranceDecorator(ticket_component)
+                    applied_addons.append("Travel Insurance")
+                
+                elif addon == "priority" and transport == "plane":
+                    ticket_component = PriorityBoardingDecorator(ticket_component)
+                    applied_addons.append("Priority Boarding (+300 BDT)")
+                
+                elif addon == "lounge" and transport == "plane":
+                    ticket_component = LoungeAccessDecorator(ticket_component)
+                    applied_addons.append("VIP Lounge Access (+400 BDT)")
+                
+                elif addon == "voucher" and transport == "bus":
+                    ticket_component = HanifVoucherDecorator(ticket_component, voucher_code)
+                    applied_addons.append(f"Hanif Voucher ({voucher_code}) - 10% off")
+                
+                elif addon == "voucher" and transport != "bus":
+                    errors.append(f"Voucher is only available for BUS, not for {transport.upper()}")
+                
+                elif addon == "priority" and transport != "plane":
+                    errors.append(f"Priority Boarding is only available for PLANE, not for {transport.upper()}")
+                
+                elif addon == "lounge" and transport != "plane":
+                    errors.append(f"Lounge Access is only available for PLANE, not for {transport.upper()}")
+                
+                else:
+                    errors.append(f"'{addon}' is not available for {transport.upper()}")
+                    
+            except ValueError as e:
+                errors.append(str(e))
+        
+        # ============= SAVE DECORATORS TO DATABASE =============
+        # Save decorators to booking document for ticket view
+        decorator_features = ticket_component.get_features()
+        
+        DB.bookings().update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {
+                "decorators": decorator_features,
+                "decorator_total": ticket_component.get_cost(),
+                "decorator_description": ticket_component.get_description(),
+                "premium_applied": premium,
+                "addons_applied": addons
+            }}
+        )
+        
+        # Step 3: Get final result
+        return jsonify({
+            "message": "Decorator Pattern Demo ✅",
+            "transport_type": transport.upper(),
+            "operator": operator,
+            "base_type": "PREMIUM" if premium else "BASIC",
+            "original_cost": original_cost,
+            "total_addon_cost": ticket_component.get_cost() - original_cost,
+            "total_cost": ticket_component.get_cost(),
+            "applied_addons": applied_addons,
+            "errors": errors if errors else None,
+            "description": ticket_component.get_description(),
+            "features": ticket_component.get_features()
+        })
+        
+    except ValueError as e:
+        return jsonify({"message": str(e)}), 400
+    except Exception as e:
+        return jsonify({"message": f"Error: {str(e)}"}), 500
+
+
+@booking.route("/decorator/available-addons", methods=["GET"])
+def get_available_addons():
+    """Returns available add-ons for each transport type"""
+    return jsonify({
+        "common_addons": [
+            {"id": "luggage", "name": "Extra Luggage", "price": 200, "description": "+10kg luggage allowance"},
+            {"id": "meal", "name": "Complimentary Meal", "price": 150, "description": "Hot meal included"}
+        ],
+        "plane_addons": [
+            {"id": "insurance", "name": "Travel Insurance", "price": 300, "description": "Flight cancellation + medical"},
+            {"id": "priority", "name": "Priority Boarding", "price": 300, "description": "Skip the queue"},
+            {"id": "lounge", "name": "VIP Lounge Access", "price": 400, "description": "Airport lounge access"}
+        ],
+        "train_addons": [
+            {"id": "insurance", "name": "Travel Insurance", "price": 50, "description": "Journey protection"}
+        ],
+        "bus_addons": [
+            {"id": "insurance", "name": "Travel Insurance", "price": 50, "description": "Trip protection"},
+            {"id": "voucher", "name": "Hanif Voucher", "price": "10% off", "description": "10% discount for Hanif Transport only", "voucher_code": "HANIF10"}
+        ],
+        "ticket_types": [
+            {"id": "basic", "name": "Basic Ticket", "extra_cost": 0, "description": "Standard ticket"},
+            {"id": "premium", "name": "Premium Ticket", "extra_cost": "Bus:300, Train:400, Plane:800", "description": "Premium seat + Extra legroom"}
+        ]
+    })

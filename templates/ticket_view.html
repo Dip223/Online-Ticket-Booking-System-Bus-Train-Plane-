@@ -26,6 +26,42 @@
   display:block !important;
   border-radius:8px;
 }
+/* Decorator add-ons section styling */
+.decorator-section {
+  margin-top: 20px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 12px;
+  padding: 12px;
+}
+.decorator-section h2 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+.decorator-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.decorator-badge {
+  background: white;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.decorator-badge i {
+  font-size: 10px;
+  color: #16a34a;
+}
 @media print{
   nav,.ticket-actions{ display:none !important; }
   body{ background:#fff !important; }
@@ -399,9 +435,33 @@ function sectionHtml(section){
   </div>`;
 }
 
+// Generate decorator add-ons HTML if features exist
+function getDecoratorHtml(features) {
+  if (!features || features.length === 0) return '';
+  
+  const decoratorItems = features.map(f => `
+    <span class="decorator-badge">
+      <i class="fas fa-plus-circle"></i> ${escapeHtml(f)}
+    </span>
+  `).join('');
+  
+  return `
+    <div class="decorator-section">
+      <h2><i class="fas fa-layer-group"></i> Decorator Pattern - Add-ons</h2>
+      <div class="decorator-list">
+        ${decoratorItems}
+      </div>
+    </div>
+  `;
+}
+
 function renderTicket(ticket){
   document.body.className = ticket.theme||"";
   document.getElementById("ticketRoot").className="";
+  
+  // Check if decorator features exist from the API response
+  const decoratorHtml = getDecoratorHtml(ticket.decorator_features);
+  
   document.getElementById("ticketRoot").innerHTML=`
     <div class="ticket-card">
       <div class="ticket-top">
@@ -426,6 +486,7 @@ function renderTicket(ticket){
       <div class="ticket-body">
         <div class="ticket-info">
           ${(ticket.sections||[]).map(sectionHtml).join("")}
+          ${decoratorHtml}
         </div>
         <div class="ticket-code-side">
           <div class="qr-wrapper">
@@ -465,10 +526,10 @@ function renderTicket(ticket){
     QRMini.draw(canvas, qrText, 152);
   } catch(e){
     console.error("QR draw failed:", e);
-    document.querySelector(".qr-wrapper").innerHTML=
-      `<div style="padding:12px;font-size:12px;color:#64748b;text-align:center;">
-         ${escapeHtml(ticket.ticket_code)}
-       </div>`;
+    const qrWrapper = document.querySelector(".qr-wrapper");
+    if(qrWrapper) {
+      qrWrapper.innerHTML = `<div style="padding:12px;font-size:12px;color:#64748b;text-align:center;">${escapeHtml(ticket.ticket_code)}</div>`;
+    }
   }
 }
 

@@ -4,30 +4,23 @@ from models.email_sender import send_email
 from datetime import datetime, timedelta
 import random
 import requests
-import os
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 
+# ===== THIS IS THE BLUEPRINT - MUST EXIST! =====
 auth = Blueprint("auth", __name__)
+# =================================================
 
 # ================= SMS OTP CONFIGURATION =================
-# Your WORKING API Key from SMSMobileAPI
 SMS_API_KEY = "487be90134311b08750e0e14bb47d0ac9d378f7397695f50"
-
-# In-memory store for SMS OTPs
 sms_otp_store = {}
 
 
 # ================= SMS OTP FUNCTIONS =================
 
 def send_sms_via_api(phone_number, otp_code):
-    """
-    Send SMS using SMSMobileAPI (uses YOUR phone as SMS gateway)
-    Converts 01XXXXXXXXX to +8801XXXXXXXXX automatically
-    """
     try:
-        # Convert 11-digit Bangladesh number to international format
         if phone_number.startswith('01') and len(phone_number) == 11:
             formatted_number = '+880' + phone_number[1:]
         else:
@@ -51,20 +44,17 @@ def send_sms_via_api(phone_number, otp_code):
         else:
             print(f"❌ SMS failed: {result}")
             return False
-            
     except Exception as e:
         print(f"❌ SMS error: {e}")
         return False
 
 
 def send_sms_demo(phone_number, otp_code):
-    """DEMO MODE: Prints OTP to terminal"""
     print("\n" + "="*60)
     print(f"📱 DEMO SMS - OTP VERIFICATION")
     print("="*60)
     print(f"To: {phone_number}")
     print(f"OTP Code: {otp_code}")
-    print(f"Message: Your OTP for BD Ticket is: {otp_code}")
     print("="*60 + "\n")
     return True
 
@@ -99,14 +89,30 @@ def train_page():
 def plane_page():
     return render_template("plane.html")
 
+@auth.route("/bus-schedule")
+def bus_schedule_page():
+    return render_template("bus_schedule.html")
+
+@auth.route("/train-schedule")
+def train_schedule_page():
+    return render_template("train_schedule.html")
+
+@auth.route("/plane-schedule")
+def plane_schedule_page():
+    return render_template("plane_schedule.html")
+
+@auth.route("/notifications-page")
+def notifications_page():
+    return render_template("notifications.html")
+
 
 # ================= EMAIL OTP (REGISTRATION) =================
 
 @auth.route("/send-register-otp", methods=["POST"])
 def send_register_otp():
-    data     = request.json
-    name     = (data.get("name") or "").strip()
-    email    = (data.get("email") or "").strip().lower()
+    data = request.json
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
     if not name or not email or not password:
@@ -121,12 +127,12 @@ def send_register_otp():
     db.otps.update_one(
         {"email": email},
         {"$set": {
-            "otp":       otp,
+            "otp": otp,
             "user_data": {
-                "name":     name,
-                "email":    email,
+                "name": name,
+                "email": email,
                 "password": generate_password_hash(password),
-                "role":     "user",
+                "role": "user",
             },
             "expires_at": datetime.utcnow() + timedelta(minutes=5),
         }},
@@ -139,9 +145,9 @@ def send_register_otp():
 
 @auth.route("/verify-register-otp", methods=["POST"])
 def verify_register_otp():
-    data      = request.json
-    email     = (data.get("email") or "").strip().lower()
-    user_otp  = (data.get("otp")   or "").strip()
+    data = request.json
+    email = (data.get("email") or "").strip().lower()
+    user_otp = (data.get("otp") or "").strip()
 
     db = DB.get_db()
     record = db.otps.find_one({"email": email})
@@ -157,16 +163,6 @@ def verify_register_otp():
 
     db.users.insert_one(record["user_data"])
     db.otps.delete_one({"email": email})
-
-    db.notifications.insert_one({
-        "user_id":    None,
-        "email":      email,
-        "message":    "Welcome to BD Ticket! 🎉 Your account has been created.",
-        "type":       "welcome",
-        "read":       False,
-        "created_at": datetime.utcnow().isoformat(),
-    })
-
     return jsonify({"message": "Account created successfully ✅"})
 
 
@@ -174,8 +170,8 @@ def verify_register_otp():
 
 @auth.route("/login", methods=["POST"])
 def login():
-    data     = request.json
-    email    = (data.get("email") or "").strip().lower()
+    data = request.json
+    email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
     db = DB.get_db()
@@ -188,11 +184,11 @@ def login():
     token = create_access_token(identity=str(user["_id"]))
 
     return jsonify({
-        "token":   token,
+        "token": token,
         "user_id": str(user["_id"]),
-        "name":    user.get("name", ""),
-        "email":   user.get("email", ""),
-        "role":    user.get("role", "user"),
+        "name": user.get("name", ""),
+        "email": user.get("email", ""),
+        "role": user.get("role", "user"),
         "message": "Login successful ✅",
     })
 
@@ -201,7 +197,7 @@ def login():
 
 @auth.route("/forgot-password", methods=["POST"])
 def forgot_password():
-    data  = request.json
+    data = request.json
     email = (data.get("email") or "").strip().lower()
     db = DB.get_db()
     user = db.users.find_one({"email": email})
@@ -213,8 +209,8 @@ def forgot_password():
     db.otps.update_one(
         {"email": email},
         {"$set": {
-            "otp":        otp,
-            "type":       "reset",
+            "otp": otp,
+            "type": "reset",
             "expires_at": datetime.utcnow() + timedelta(minutes=5),
         }},
         upsert=True,
@@ -226,9 +222,9 @@ def forgot_password():
 
 @auth.route("/reset-password", methods=["POST"])
 def reset_password():
-    data         = request.json
-    email        = (data.get("email") or "").strip().lower()
-    otp          = (data.get("otp")   or "").strip()
+    data = request.json
+    email = (data.get("email") or "").strip().lower()
+    otp = (data.get("otp") or "").strip()
     new_password = data.get("password") or ""
 
     db = DB.get_db()
@@ -249,29 +245,19 @@ def reset_password():
     return jsonify({"message": "Password updated successfully ✅"})
 
 
-# ================= SMS OTP FOR BOOKING VERIFICATION (NO SESSION) =================
+# ================= SMS OTP FOR BOOKING =================
 
 @auth.route("/send-sms-otp", methods=["POST"])
 def send_sms_otp():
-    """Send OTP via SMS to user's mobile number for booking verification"""
     try:
         data = request.json
         phone_number = data.get('phone_number', '').strip()
         nid = data.get('nid', '').strip()
         
-        if not phone_number:
-            return jsonify({"message": "Phone number is required ❌"}), 400
-        
-        if not phone_number.startswith('01') or len(phone_number) != 11:
-            return jsonify({
-                "message": "Please enter a valid 11-digit Bangladesh phone number (01XXXXXXXXX)"
-            }), 400
-        
-        if not nid:
-            return jsonify({"message": "NID number is required for verification ❌"}), 400
-        
-        if len(nid) < 10:
-            return jsonify({"message": "Please enter a valid NID number (10-17 digits)"}), 400
+        if not phone_number or not phone_number.startswith('01') or len(phone_number) != 11:
+            return jsonify({"message": "Enter valid 11-digit number (01XXXXXXXXX)"}), 400
+        if not nid or len(nid) < 10:
+            return jsonify({"message": "Enter valid NID (10-17 digits)"}), 400
         
         otp_code = str(random.randint(100000, 999999))
         
@@ -286,76 +272,47 @@ def send_sms_otp():
         success = send_sms_via_api(phone_number, otp_code)
         
         if success:
-            return jsonify({
-                "message": f"✓ OTP sent to {phone_number} via SMS! Check your phone.",
-                "verified": False
-            })
+            return jsonify({"message": f"✓ OTP sent to {phone_number} via SMS!"})
         else:
             send_sms_demo(phone_number, otp_code)
-            return jsonify({
-                "message": f"⚠️ SMS delivery issue. Check terminal for OTP code.",
-                "verified": False
-            })
+            return jsonify({"message": f"⚠️ Check terminal for OTP code."})
         
     except Exception as e:
-        print(f"SMS error: {e}")
-        return jsonify({"message": f"Failed to send OTP: {str(e)}"}), 500
+        return jsonify({"message": str(e)}), 500
 
 
 @auth.route("/verify-sms-otp", methods=["POST"])
 def verify_sms_otp():
-    """Verify the OTP entered by user - NO SESSION DEPENDENCY"""
     try:
         data = request.json
         phone_number = data.get('phone_number', '').strip()
         user_otp = data.get('otp', '').strip()
         
-        print(f"🔍 Verifying OTP for {phone_number}: {user_otp}")
-        
         stored_data = sms_otp_store.get(phone_number)
-        
         if not stored_data:
-            return jsonify({
-                "message": "No OTP request found. Please request OTP first.",
-                "verified": False
-            }), 400
+            return jsonify({"message": "Request OTP first", "verified": False}), 400
         
         if datetime.utcnow() > stored_data['expires_at']:
             del sms_otp_store[phone_number]
-            return jsonify({
-                "message": "OTP has expired. Please request a new one.",
-                "verified": False
-            }), 400
+            return jsonify({"message": "OTP expired", "verified": False}), 400
         
         stored_data['attempts'] += 1
         if stored_data['attempts'] > 3:
             del sms_otp_store[phone_number]
-            return jsonify({
-                "message": "Too many failed attempts. Please request a new OTP.",
-                "verified": False
-            }), 400
+            return jsonify({"message": "Too many attempts", "verified": False}), 400
         
         if stored_data['otp'] == user_otp:
-            # Store verification in memory (not session)
             del sms_otp_store[phone_number]
-            return jsonify({
-                "message": "OTP verified successfully ✅",
-                "verified": True
-            })
+            return jsonify({"message": "OTP verified ✅", "verified": True})
         else:
-            return jsonify({
-                "message": f"Invalid OTP. {3 - stored_data['attempts']} attempts remaining.",
-                "verified": False
-            }), 400
+            remaining = 3 - stored_data['attempts']
+            return jsonify({"message": f"Invalid OTP. {remaining} attempts left.", "verified": False}), 400
             
     except Exception as e:
-        print(f"❌ Verification error: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({"message": str(e), "verified": False}), 500
 
 
-# ================= DEBUG ROUTES =================
+# ================= DEBUG =================
 
 @auth.route("/users")
 def get_users():
@@ -365,25 +322,3 @@ def get_users():
         u["_id"] = str(u["_id"])
         u.pop("password", None)
     return jsonify(users)
-
-
-# ================= SCHEDULE PAGES =================
-
-@auth.route('/bus-schedule')
-def bus_schedule_page():
-    return render_template("bus_schedule.html")
-
-@auth.route('/train-schedule')
-def train_schedule_page():
-    return render_template("train_schedule.html")
-
-@auth.route('/plane-schedule')
-def plane_schedule_page():
-    return render_template("plane_schedule.html")
-
-
-# ================= NOTIFICATIONS PAGE =================
-
-@auth.route("/notifications-page")
-def notifications_page():
-    return render_template("notifications.html")

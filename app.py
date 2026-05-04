@@ -7,7 +7,6 @@ from routes.auth_routes import auth
 from routes.booking_routes import booking
 from routes.route_routes import route_bp
 from routes.admin_routes import admin_bp
-
 from config import JWT_SECRET_KEY
 
 app = Flask(__name__)

@@ -44,7 +44,7 @@ class TestCompleteBookingSystem:
         password_input = driver.find_element(By.ID, "password")
         
         # Use test account (create one first)
-        email_input.send_keys("ashfak.tanjim@gmail.com")
+        email_input.send_keys("mehedi183012.2003@gmail.com")
         password_input.send_keys("123456")
         
         login_btn = driver.find_element(By.CLASS_NAME, "btn-login")
@@ -226,7 +226,7 @@ class TestCompleteBookingSystem:
         password_input = driver.find_element(By.ID, "password")
         
         email_input.clear()
-        email_input.send_keys("md.soheleleven05@gmail.com")
+        email_input.send_keys("zihadmuzahid2003@gmail.com")
         password_input.clear()
         password_input.send_keys("123456")
         
